@@ -5,13 +5,23 @@ namespace CMPUT350 {
 DrawContext::DrawContext(std::shared_ptr<sf::RenderWindow> window, std::shared_ptr<sf::Font> font)
     : mWindow(window), mFont(font) {}
 
-void DrawContext::DrawCenteredText(const std::string &text, int pixelSize, Point2D p, RGBColor c) {}
+void DrawContext::DrawCenteredText(const std::string &text, int pixelSize, Point2D p, RGBColor c) {
+    sf::Text textToDraw(*mFont);
+    textToDraw.setString(text);
+    textToDraw.setFillColor(sf::Color(c.r, c.g, c.b));
+    textToDraw.setPosition(sf::Vector2f(p.x, p.y));
+    textToDraw.setLineAlignment(sf::Text::LineAlignment::Center);
+
+    mWindow->draw(textToDraw);
+}
 
 void DrawContext::DrawText(const std::string &text, int pixelSize, Point2D p, RGBColor c) {
     sf::Text textToDraw(*mFont);
     textToDraw.setString(text);
     textToDraw.setFillColor(sf::Color(c.r, c.g, c.b));
     textToDraw.setPosition(sf::Vector2f(p.x, p.y));
+
+    mWindow->draw(textToDraw);
 }
 
 void DrawContext::DrawCircle(Point2D p, float radius, RGBColor c) {
