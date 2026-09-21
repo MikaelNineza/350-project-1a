@@ -34,12 +34,21 @@ void DrawContext::DrawCircle(Point2D p, float radius, RGBColor c) {
 
 void DrawContext::DrawRect(Rect r, RGBColor c) {
     sf::RectangleShape rectangle({r.width, r.height});
+    rectangle.setPosition({r.topLeft.x, r.topLeft.y});
     rectangle.setFillColor(sf::Color(c.r, c.g, c.b));
 
     mWindow->draw(rectangle);
 }
 
-void DrawContext::FrameRect(Rect r, float width, RGBColor c) {}
+void DrawContext::FrameRect(Rect r, float width, RGBColor c) {
+    sf::RectangleShape rectangle({r.width, r.height});
+    rectangle.setPosition({r.topLeft.x, r.topLeft.y});
+    rectangle.setOutlineColor(sf::Color(c.r, c.g, c.b));
+    rectangle.setFillColor(sf::Color::Transparent);
+    rectangle.setOutlineThickness(width);
+
+    mWindow->draw(rectangle);
+}
 
 /**
  * @brief Draws a line between two points with a specified width and color.
