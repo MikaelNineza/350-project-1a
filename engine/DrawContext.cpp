@@ -62,7 +62,16 @@ void DrawContext::FrameRect(Rect r, float width, RGBColor c) {
  * and uses a polygone shape to represent the line. The line is drawn
  * relative to the world offset and rendered onto the associated window.
  */
-void DrawContext::DrawLine(Point2D from, Point2D to, float width, RGBColor c) {}
+void DrawContext::DrawLine(Point2D from, Point2D to, float width, RGBColor c) {
+    sf::ConvexShape line(2);
+
+    line.setPoint(0, {from.x, from.y});
+    line.setPoint(1, {to.x, to.y});
+    line.setOutlineThickness(width);
+    line.setOutlineColor(sf::Color(c.r, c.g, c.b));
+
+    mWindow->draw(line);
+}
 
 int DrawContext::GetWindowWidth() { return mWindow->getSize().x; }
 
