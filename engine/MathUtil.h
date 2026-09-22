@@ -6,6 +6,8 @@
 
 namespace CMPUT350 {
 
+using namespace std;
+
 struct Point2D {
     float x, y;
     Point2D(float x = 0, float y = 0) : x(x), y(y) {}
@@ -97,142 +99,33 @@ struct Line {
         return p1.Distance(p) < p2.Distance(p) ? p1 : p2;
     }
     bool Crosses(Line other, Point2D &crossingPoint) const {
-        // if x and y ranges don't overlap then they won't intersect
-        if (!Line::OverlappingRanges(*this, other)) {
+        Point2D Q = p1;
+        Point2D Q_vec = p2 - p1;
+
+        Point2D P = other.p1;
+        Point2D P_vec = other.p2 - other.p1;
+        
+        float dem = Point2D::Cross(Q_vec, P_vec);
+        if (dem == 0.0f) {
             return false;
         }
 
-        bool this_vertical = p1.x == p2.x;
-        bool other_vertical = other.p1.x == other.p2.x;
-
-        // case 1: both lines are vertical
-        if (this_vertical && other_vertical) {
-            // if they don't have the same x, they never intersect
-            if (p1.x != other.p1.x) {
-                return false;
-            }
-            
-            // otherwise they always intersect
-            Line::FindIntersect(*this, other, crossingPoint);
-            return true;
-        }
-
-        // case 2: this is vertical, other isn't
-        else if (this_vertical) {
-            return Line::CheckVertical(*this, other, crossingPoint);
-        }
-
-        else if (other_vertical) {
-            return Line::CheckVertical(other, *this, crossingPoint);
-        }
-
-        // get slope equation of both line segments y = mx+b
-        auto m = (p2.y - p1.y) / (p2.x - p1.x);
-        auto m_other = (other.p2.y - other.p1.y) / (other.p2.x - other.p1.x);
-
-        auto b = p1.y - (m * p1.x);
-        auto b_other = other.p1.y - (m_other * other.p1.x);
-
-        // check if lines are parallel
-        if (m == m_other){
-            // if b != b_other they never intersect
-            if (b != b_other){
-                return false;
-            }
-
-            // otherwise they always intersect; pick the first appropriate endpoint as the "crossingpoint"
-            Line::FindIntersect(*this, other, crossingPoint);
-            return true;
-        }
+        float t = Point2D::Cross(P - Q, P_vec) / dem;
+        float u = Point2D::Cross(P - Q, Q_vec) / dem;
         
-        // intersection only happens once at (x, y)
-        float x = (b_other - b) / (m - m_other);
-        float y = m*x + b;
-
-        // check that both line segments contain the crossingpoint x
-        if (!(XWithinRange(*this, x) && XWithinRange(other, x))){
+        if (!(0 <= t && t <= 1 && 0 <= u && u <= 1)) { 
             return false;
         }
 
-        crossingPoint.x = x;
-        crossingPoint.y = y;
+        crossingPoint.x = Q.x + t * Q_vec.x;
+        crossingPoint.y = Q.y + t * Q_vec.y;
 
         return true;
-    }
-
-    private static bool CheckVertical(const Line vertical, const Line other, Point2D &crossingPoint) {
-        // get the slope equation of the non-vertical line
-        auto m = (other.p2.y - other.p1.y) / (other.p2.x - other.p1.x);
-        auto b = other.p1.y - (m * other.p1.x);
-
-        // an intersection is guarateed to occur at the fixed x for vertical
-        auto x = vertical.p1.x;
-        auto y = m * x + b;
-
-        // check to see if the intersection occurs within the range of each line
-        if (!(XWithinRange(vertical, x) && XWithinRange(other, x) &&
-            YWithinRange(vertical, y) && YWithinRange(other, y))){
-            return false;    
-        }
-
-        crossingPoint.x = x;
-        crossingPoint.y = y;
-
-        return true;
-    }
-
-    private static bool XWithinRange(const Line line, float x) {
-        float x1 = min(line.p1.x, line.p2.x);
-        float x2 = max(line.p1.x, line.p2.x);
-        return x1 <= x && x <= x2;
-    }
-
-    private static bool YWithinRange(const Line line, float y) {
-        float y1 = min(line.p1.y, line.p2.y);
-        float y2 = max(line.p1.y, line.p2.y);
-        return y1 <= y && y <= y2;
-    }
-
-    private static void FindIntersect(const Line first, const Line second, Point2D &crossingPoint) {
-        // method called if guaranteed same slope equation and overlapping 
-        // check each endpoint and return the first one that indicates overlap
-        if (first.p1.x >= min(second.p1.x, second.p2.x) && first.p1.x <= max(second.p1.x, second.p2.x) &&
-            first.p1.y >= min(second.p1.y, second.p2.y) && first.p1.y <= max(second.p1.y, second.p2.y)) {
-            crossingPoint = first.p1;
-        } 
-        else if (first.p2.x >= min(second.p1.x, second.p2.x) && first.p2.x <= max(second.p1.x, second.p2.x) &&
-                first.p2.y >= min(second.p1.y, second.p2.y) && first.p2.y <= max(second.p1.y, second.p2.y)) {
-            crossingPoint = first.p2;
-        } 
-        else if (second.p1.x >= min(first.p1.x, first.p2.x) && second.p1.x <= max(first.p1.x, first.p2.x) &&
-                second.p1.y >= min(first.p1.y, first.p2.y) && second.p1.y <= max(first.p1.y, first.p2.y)) {
-            crossingPoint = second.p1;
-        } 
-        else {
-            crossingPoint = second.p2;
-        }
-    }
-    
-    // returns true if both lines have overlapping x and y values
-    private static bool OverlappingRanges(Line first, Line second) {
-        float first_x1 = min(first.p1.x, first.p2.x);
-        float first_x2 = max(first.p1.x, first.p2.x);
-        float second_x1 = min(second.p1.x, second.p2.x);
-        float second_x2 = max(second.p1.x, second.p2.x);
-
-        float first_y1 = min(first.p1.y, first.p2.y);
-        float first_y2 = max(first.p1.y, first.p2.y);
-        float second_y1 = min(second.p1.y, second.p2.y);
-        float second_y2 = max(second.p1.y, second.p2.y);
-        
-        bool x_overlaps = first_x1 <= second_x2 && second_x1 <= first_x2;
-        bool y_overlaps = first_y1 <= second_y2 && second_y1 <= first_y2;
-        return x_overlaps && y_overlaps;
     }
 };
 
 static std::ostream &operator<<(std::ostream &os, const Line &l) {
-    // TODO: write this code
+    os << "Start: (" << l.p1.x ", " << l.p1.y << "), End: (" << l.p2.x << ", " << l.p2.y << ")";
     return os;
 }
 
@@ -291,8 +184,13 @@ struct Rect {
         // TODO: write this code
     }
     bool IsInside(const Point2D &p) const {
-        // TODO: write this code
-        return false;
+        float x1 = topLeft.x;
+        float x2 = x1 + width;
+
+        float y1 = topLeft.y;
+        float y2 = y1 + height;
+
+        return x1 <= p.x && p.x <= x2 && y1 <= p.y && p.y <= y2;
     }
 };
 
