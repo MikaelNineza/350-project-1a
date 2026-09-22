@@ -125,7 +125,7 @@ struct Line {
 };
 
 static std::ostream &operator<<(std::ostream &os, const Line &l) {
-    os << "Start: (" << l.p1.x ", " << l.p1.y << "), End: (" << l.p2.x << ", " << l.p2.y << ")";
+    os << "Start: " << l.p1 << "End: " << l.p2;
     return os;
 }
 
@@ -157,31 +157,66 @@ struct Rect {
         : topLeft(center.x - radius, center.y - radius), width(2 * radius), height(2 * radius) {}
 
     Rect &operator|=(const Rect &other) {
-        // TODO: write this code
+        // minimally include "other" rectangle within this one
+        // calculate and set new fields
+        float left = min(topLeft.x, other.topLeft.x);
+        float right = max(topLeft.x, other.topLeft.x);
+        float top = min(topLeft.y, other.topLeft.y);
+        float bottom = max(topLeft.y, other.topLeft.y);
+
+        topLeft = Point2D(left, top);
+        width = right - left;
+        height = bottom - top;
         return *this;
     }
     Rect &operator|=(const Point2D &other) {
-        // TODO: write this code
+        // minimally include "other" point within this rectangle
+        float left = min(topLeft.x, other.x);
+        float right = max(topLeft.x, other.x);
+        float top = min(topLeft.y, other.y);
+        float bottom = max(topLeft.y, other.y);
+
+        topLeft = Point2D(left, top);
+        width = right - left;
+        height = bottom - top;
         return *this;
     }
     Rect &operator|=(const Line &other) {
-        // TODO: write this code
+        // a line can be included using endpoints
+        *this |= other.p1;
+        *this |= other.p2;
         return *this;
     }
     Rect &operator&=(const Rect &other) {
-        // TODO: write this code
+        // intersection
+        float left = max(topLeft.x, other.x);
+        float right = min(topLeft.x + width, other.x + other.width);
+        float top = max(topLeft.y, other.y);
+        float bottom = min(topLeft.y + height, other.y + other.height);
+
+        topLeft = Point2D(left, top);
+        width = max(0.0f, right - left);
+        height = max(0.0f, bottom - top);
+        if (width == 0.0f && height == 0.0f) { 
+            topLeft = Point2D(0.0f, 0.0f);
+        }
         return *this;
     }
     Rect &operator+=(const Point2D &other) {
-        // TODO: write this code
+        topLeft += other;
         return *this;
     }
     Rect operator+(const Point2D &other) const {
-        // TODO: write this code
-        return *this;
+        Rect rect = *this;
+        rect += other;
+        return rect;
     }
     void Inset(int inset) {
-        // TODO: write this code
+        // shrink each size by "inset" units
+        topLeft.x += inset;
+        topLeft.y += inset;
+        width -= 2 * inset;
+        height -= 2 * inset;
     }
     bool IsInside(const Point2D &p) const {
         float x1 = topLeft.x;
@@ -195,7 +230,7 @@ struct Rect {
 };
 
 static std::ostream &operator<<(std::ostream &os, const Rect &l) {
-    // TODO: write this code
+    os << "Top left: " << l.topLeft << ", Width: " << l.width << ", Height: " << l.height;
     return os;
 }
 
