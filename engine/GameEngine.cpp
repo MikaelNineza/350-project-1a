@@ -20,7 +20,9 @@ GameEngine::~GameEngine() {
     mWindow->close();
 }
 
-void GameEngine::AddGameObject(std::shared_ptr<GameObject> gameObject) {}
+void GameEngine::AddGameObject(std::shared_ptr<GameObject> gameObject) {
+    mNewObjects.push_back(std::move(gameObject));
+}
 
 /**
  * @method Run
