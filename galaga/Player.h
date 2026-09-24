@@ -2,6 +2,7 @@
 #define PLAYER_H
 
 #include "CollisionObject.h"
+#include <vector>
 
 class Player : public CMPUT350::CollisionObject
 {

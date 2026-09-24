@@ -189,10 +189,10 @@ struct Rect {
     }
     Rect &operator&=(const Rect &other) {
         // intersection
-        float left = max(topLeft.x, other.x);
-        float right = min(topLeft.x + width, other.x + other.width);
-        float top = max(topLeft.y, other.y);
-        float bottom = min(topLeft.y + height, other.y + other.height);
+        float left = max(topLeft.x, other.topLeft.x);
+        float right = min(topLeft.x + width, other.topLeft.x + other.width);
+        float top = max(topLeft.y, other.topLeft.y);
+        float bottom = min(topLeft.y + height, other.topLeft.y + other.height);
 
         topLeft = Point2D(left, top);
         width = max(0.0f, right - left);
