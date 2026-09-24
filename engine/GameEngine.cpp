@@ -3,13 +3,17 @@
 /// @brief
 namespace CMPUT350 {
 #include "FontData.h"
+const uint32_t FPS_LIMIT = 30;
 
-GameEngine::GameEngine(unsigned int width, unsigned int height, const std::string& name) {
-    // Sample font loading code
-    //	if (!mFont->openFromMemory(&_font, _font_len))
-    //	{
-    //		fprintf(stderr, "WARNING: Font did not load.\n");
-    //	}
+GameEngine::GameEngine(unsigned int width, unsigned int height, const std::string& name) : mWindow(std::make_shared<sf::RenderWindow>()) {
+    mWindow->create(sf::VideoMode({width, height}), name);
+    mWindow->setFramerateLimit(FPS_LIMIT);
+    mWindow->setKeyRepeatEnabled(false);
+    
+    if (!mFont->openFromMemory(&_font, _font_len))
+    {
+        fprintf(stderr, "WARNING: Font did not load.\n");
+    }
 }
 
 GameEngine::~GameEngine() {
