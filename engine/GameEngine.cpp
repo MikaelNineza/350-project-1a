@@ -17,8 +17,7 @@ GameEngine::GameEngine(unsigned int width, unsigned int height, const std::strin
 }
 
 GameEngine::~GameEngine() {
-    // Cleanup resources
-    // mWindow->close();
+    mWindow->close();
 }
 
 void GameEngine::AddGameObject(std::shared_ptr<GameObject> gameObject) {}
