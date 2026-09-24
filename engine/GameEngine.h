@@ -30,6 +30,8 @@ public:
 
     void Run();
 
+    bool GameEngine::ProcessEvents(GameContext *context);
+
 private:
     std::shared_ptr<sf::RenderWindow> mWindow;
     std::shared_ptr<sf::Font> mFont;

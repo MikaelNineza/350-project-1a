@@ -1,8 +1,14 @@
 #include "GameEngine.h"
+#include "DrawContext.h"
+#include "GameContext.h"
+#include "GameObject.h"
+#include "GraphicsObject.h"
+#include "CollisionObject.h"
 
 /// @brief
 namespace CMPUT350 {
 #include "FontData.h"
+
 const uint32_t FPS_LIMIT = 30;
 
 GameEngine::GameEngine(unsigned int width, unsigned int height, const std::string& name) : mWindow(std::make_shared<sf::RenderWindow>()) {
@@ -31,47 +37,91 @@ void GameEngine::AddGameObject(std::shared_ptr<GameObject> gameObject) {
  * all objects have been destroyed.
  */
 void GameEngine::Run() {
+    DrawContext drawContext(mWindow, mFont);
+    GameContext context{this, &drawContext};
+
     while (true)  // window is open
     {
         // 0. Remove any objects that are now dead
+        mGameObjects.erase(std::remove_if(mGameObjects.begin(), mGameObjects.end(), isObjectAlive), mGameObjects.end());
 
         // 1. Activate and initialize any objects added during the last frame
+        for (auto& obj : mNewObjects) {
+            mGameObjects.push_back(std::move(obj));
+        }
+        mNewObjects.clear();
 
         // 2. Process events
+        bool shouldQuit = ProcessEvents(&context);
+        if (shouldQuit) {
+            break;
+        }
 
         // 3. Update game objects
+        for(auto& obj : mGameObjects) {
+                obj->Update(&context);
+        }
 
         // 4. Process collision events
+        int objCount = mGameObjects.size();
+        for (int i = 0; i < objCount; ++i) {
+            for (int j = 0; j < objCount; ++j) {
+                if (i == j) {
+                    continue;
+                }
+
+                
+            }
+        }
 
         // 5. Late updates
+        for(auto& obj : mGameObjects) {
+                obj->LateUpdate(&context);
+        }
 
         // Clear window
+        mWindow->clear(sf::Color::Blue);
 
         // 6. Render background
+        for(auto& obj : mGameObjects) {
+            if (auto graphic = dynamic_pointer_cast<GraphicsObject>(obj)) {
+                graphic->RenderForeground(&context);
+            }
+        }
 
         // 7. Render foreground
+        for(auto& obj : mGameObjects) {
+            if (auto graphic = dynamic_pointer_cast<GraphicsObject>(obj)) {
+                graphic->RenderBackground(&context);
+            }
+        }
 
         // Actually render to window
+        mWindow->display();
     }
 }
 
-// Sample code for processing events
+bool isObjectAlive(const GameObject& obj) { return obj.IsAlive(); }
 
-// bool GameEngine::ProcessEvents(GameContext *context)
-//{
-//	while (const std::optional event = mWindow->pollEvent())
-//	{
-//		if (event->is<sf::Event::Closed>())
-//		{
-//		}
-//		else if (event->is<sf::Event::Resized>())
-//		{
-//		}
-//		else if (const auto* keyPressed = event->getIf<sf::Event::TextEntered>())
-//		{
-//			// use keyPressed->unicode to get character
-//		}
-//	}
-// }
+bool GameEngine::ProcessEvents(GameContext *context)
+{
+	while (const std::optional event = mWindow->pollEvent())
+	{
+		if (event->is<sf::Event::Closed>())
+		{
+            mWindow->close();
+            return true;
+		}
+		else if (event->is<sf::Event::Resized>())
+		{
+		}
+		else if (const auto* keyPressed = event->getIf<sf::Event::TextEntered>())
+		{
+			for(auto& obj : mGameObjects) {
+                obj->HandleKeyEvent(context, keyPressed->unicode);
+            }
+		}
+	}
+}
 
 }  // namespace CMPUT350
