@@ -1,4 +1,7 @@
 #include "Bullet.h"
+#include "Enemy.h"
+#include "Player.h"
+#include <vector>
 #define BULLET_SPEED 4.0f // testing
 
 Bullet::Bullet(CMPUT350::Point2D location, CMPUT350::Point2D heading, bool player) : location(location), prev_location(location), heading(heading), player(player), isAlive(true)

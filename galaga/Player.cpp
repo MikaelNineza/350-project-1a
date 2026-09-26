@@ -10,6 +10,7 @@ Player::Player(CMPUT350::Point2D loc) : loc(loc), isAlive(true)
 
 void Player::Initialize(CMPUT350::GameContext* context)
 {
+    return;
 }
 
 void Player::Update(CMPUT350::GameContext* context)
@@ -51,7 +52,7 @@ bool Player::HandleKeyEvent(CMPUT350::GameContext* context, char key)
         auto dir = CMPUT350::Point2D(0.0f, -1.0f); // bullet shoots straight up
         std::shared_ptr<Bullet> bullet = std::make_shared<Bullet>(loc, dir, true);
         context->mEngineView->AddGameObject(bullet);
-        bullets.push_back(bullet); // implicit conversion to weak ptr
+        bullets.push_back(bullet);
         return true;
     }
     return false;
@@ -65,7 +66,7 @@ void Player::RenderBackground(CMPUT350::GameContext* context)
 void Player::RenderForeground(CMPUT350::GameContext* context)
 {
     // TODO: make it look better than just a rectangle
-    context->ScreenContext->DrawRect(GetBounds(), CMPUT350::Colors::Red);
+    context->ScreenContext->DrawRect(GetBounds(), CMPUT350::Colors::red);
 }
 
 void Player::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)
