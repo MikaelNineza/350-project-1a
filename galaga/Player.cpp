@@ -66,7 +66,7 @@ void Player::RenderBackground(CMPUT350::GameContext* context)
 void Player::RenderForeground(CMPUT350::GameContext* context)
 {
     // TODO: make it look better than just a rectangle
-    context->ScreenContext->DrawRect(GetBounds(), CMPUT350::Colors::red);
+    context->ScreenContext->DrawRect(GetBounds(), CMPUT350::Colors::yellow);
 }
 
 void Player::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)
