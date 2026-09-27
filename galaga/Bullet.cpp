@@ -2,7 +2,7 @@
 #include "Enemy.h"
 #include "Player.h"
 #include <vector>
-#define BULLET_SPEED 4.0f // testing
+#define BULLET_SPEED 15.0f // testing
 
 Bullet::Bullet(CMPUT350::Point2D location, CMPUT350::Point2D heading, bool player) : location(location), prev_location(location), heading(heading), player(player), isAlive(true)
 {
@@ -84,8 +84,11 @@ const CMPUT350::Rect& Bullet::GetBounds()
 {
     static CMPUT350::Rect sBounds(0, 0, 0, 0);
     CMPUT350::Rect empty(0, 0, 0, 0);
-    sBounds = empty;
+    /*sBounds = empty;
     sBounds |= prev_location;
-    sBounds |= location;
+    sBounds |= location;*/
+    // TESTING
+    auto topLeft = location - 5;
+    sBounds = CMPUT350::Rect(topLeft, 10, 10);
     return sBounds;
 }

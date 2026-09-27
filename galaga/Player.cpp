@@ -2,7 +2,7 @@
 #include "Player.h"
 #include "Bullet.h"
 
-#define MOVEMENT_SPEED 3.0f // sample value
+#define MOVEMENT_SPEED 9.0f // sample value
 
 Player::Player(CMPUT350::Point2D loc) : loc(loc), isAlive(true)
 {
