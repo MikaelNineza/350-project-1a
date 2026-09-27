@@ -10,12 +10,14 @@ namespace CMPUT350 {
 #include "FontData.h"
 
 const uint32_t FPS_LIMIT = 30;
+bool isObjectDead(const shared_ptr<GameObject> obj);
 
 GameEngine::GameEngine(unsigned int width, unsigned int height, const std::string& name) : mWindow(std::make_shared<sf::RenderWindow>()) {
     mWindow->create(sf::VideoMode({width, height}), name);
     mWindow->setFramerateLimit(FPS_LIMIT);
     mWindow->setKeyRepeatEnabled(false);
-    
+    mFont = std::make_shared<sf::Font>();
+
     if (!mFont->openFromMemory(&_font, _font_len))
     {
         fprintf(stderr, "WARNING: Font did not load.\n");
@@ -43,13 +45,18 @@ void GameEngine::Run() {
     while (true)  // window is open
     {
         // 0. Remove any objects that are now dead
-        mGameObjects.erase(std::remove_if(mGameObjects.begin(), mGameObjects.end(), isObjectAlive), mGameObjects.end());
+        mGameObjects.erase(std::remove_if(mGameObjects.begin(), mGameObjects.end(), isObjectDead), mGameObjects.end());
 
         // 1. Activate and initialize any objects added during the last frame
         for (auto& obj : mNewObjects) {
+            obj->Initialize(&context);
             mGameObjects.push_back(std::move(obj));
         }
         mNewObjects.clear();
+
+        if (mGameObjects.empty()) {
+            break;
+        }
 
         // 2. Process events
         bool shouldQuit = ProcessEvents(&context);
@@ -65,12 +72,24 @@ void GameEngine::Run() {
         // 4. Process collision events
         int objCount = mGameObjects.size();
         for (int i = 0; i < objCount; ++i) {
+            auto firstObj = dynamic_pointer_cast<CollisionObject>(mGameObjects[i]);
+            if (!firstObj || !firstObj->IsAlive()) {
+                continue;
+            }
+
             for (int j = 0; j < objCount; ++j) {
-                if (i == j) {
+                auto secondObj = dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
+                if (!secondObj || !secondObj->IsAlive() || i == j) {
                     continue;
                 }
 
-                
+                Rect overlap = firstObj->GetBounds();
+                overlap &= secondObj->GetBounds();
+
+                if (overlap.width > 0 && overlap.height > 0) {
+                    firstObj->CollisionEnter(secondObj);
+                }
+
             }
         }
 
@@ -80,19 +99,19 @@ void GameEngine::Run() {
         }
 
         // Clear window
-        mWindow->clear(sf::Color::Blue);
+        mWindow->clear(sf::Color::Black);
 
         // 6. Render background
         for(auto& obj : mGameObjects) {
             if (auto graphic = dynamic_pointer_cast<GraphicsObject>(obj)) {
-                graphic->RenderForeground(&context);
+                graphic->RenderBackground(&context);
             }
         }
 
         // 7. Render foreground
         for(auto& obj : mGameObjects) {
             if (auto graphic = dynamic_pointer_cast<GraphicsObject>(obj)) {
-                graphic->RenderBackground(&context);
+                graphic->RenderForeground(&context);
             }
         }
 
@@ -101,7 +120,7 @@ void GameEngine::Run() {
     }
 }
 
-bool isObjectAlive(const GameObject& obj) { return obj.IsAlive(); }
+bool isObjectDead(const shared_ptr<GameObject> obj) { return !obj->IsAlive(); }
 
 bool GameEngine::ProcessEvents(GameContext *context)
 {
@@ -120,8 +139,10 @@ bool GameEngine::ProcessEvents(GameContext *context)
 			for(auto& obj : mGameObjects) {
                 obj->HandleKeyEvent(context, keyPressed->unicode);
             }
-		}
+		}       
 	}
+
+    return false;
 }
 
 }  // namespace CMPUT350

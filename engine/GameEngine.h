@@ -30,7 +30,7 @@ public:
 
     void Run();
 
-    bool GameEngine::ProcessEvents(GameContext *context);
+    bool ProcessEvents(GameContext *context);
 
 private:
     std::shared_ptr<sf::RenderWindow> mWindow;
