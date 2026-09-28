@@ -2,7 +2,7 @@
 #include "Player.h"
 #include "Bullet.h"
 
-#define MOVEMENT_SPEED 3.0f // sample value
+#define MOVEMENT_SPEED 9.0f // sample value
 
 Player::Player(CMPUT350::Point2D loc) : loc(loc), isAlive(true)
 {
@@ -66,7 +66,7 @@ void Player::RenderBackground(CMPUT350::GameContext* context)
 void Player::RenderForeground(CMPUT350::GameContext* context)
 {
     // TODO: make it look better than just a rectangle
-    context->ScreenContext->DrawRect(GetBounds(), CMPUT350::Colors::red);
+    context->ScreenContext->DrawRect(GetBounds(), CMPUT350::Colors::yellow);
 }
 
 void Player::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)

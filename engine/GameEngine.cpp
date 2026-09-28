@@ -15,7 +15,7 @@ bool isObjectDead(const shared_ptr<GameObject> obj);
 GameEngine::GameEngine(unsigned int width, unsigned int height, const std::string& name) : mWindow(std::make_shared<sf::RenderWindow>()) {
     mWindow->create(sf::VideoMode({width, height}), name);
     mWindow->setFramerateLimit(FPS_LIMIT);
-    mWindow->setKeyRepeatEnabled(false);
+    mWindow->setKeyRepeatEnabled(true);
     mFont = std::make_shared<sf::Font>();
 
     if (!mFont->openFromMemory(&_font, _font_len))
