@@ -11,6 +11,7 @@ void DrawContext::DrawCenteredText(const std::string &text, int pixelSize, Point
     textToDraw.setFillColor(sf::Color(c.r, c.g, c.b));
     textToDraw.setPosition(sf::Vector2f(p.x, p.y));
     textToDraw.setLineAlignment(sf::Text::LineAlignment::Center);
+    textToDraw.setCharacterSize(pixelSize);
 
     mWindow->draw(textToDraw);
 }
@@ -20,6 +21,7 @@ void DrawContext::DrawText(const std::string &text, int pixelSize, Point2D p, RG
     textToDraw.setString(text);
     textToDraw.setFillColor(sf::Color(c.r, c.g, c.b));
     textToDraw.setPosition(sf::Vector2f(p.x, p.y));
+    textToDraw.setCharacterSize(pixelSize);
 
     mWindow->draw(textToDraw);
 }
