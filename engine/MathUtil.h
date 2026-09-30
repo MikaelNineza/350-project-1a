@@ -6,8 +6,6 @@
 
 namespace CMPUT350 {
 
-using namespace std;
-
 struct Point2D {
     float x, y;
     Point2D(float x = 0, float y = 0) : x(x), y(y) {}
@@ -73,8 +71,10 @@ struct Point2D {
     }
     void Normalize() {
         auto length = Distance(Point2D(0, 0));
-        x /= length;
-        y /= length;
+        if (length) {
+            x /= length;
+            y /= length;
+        }
     }
 };
 
@@ -159,10 +159,10 @@ struct Rect {
     Rect &operator|=(const Rect &other) {
         // minimally include "other" rectangle within this one
         // calculate and set new fields
-        float left = min(topLeft.x, other.topLeft.x);
-        float right = max(topLeft.x, other.topLeft.x);
-        float top = min(topLeft.y, other.topLeft.y);
-        float bottom = max(topLeft.y, other.topLeft.y);
+        float left = std::min(topLeft.x, other.topLeft.x);
+        float right = std::max(topLeft.x, other.topLeft.x);
+        float top = std::min(topLeft.y, other.topLeft.y);
+        float bottom = std::max(topLeft.y, other.topLeft.y);
 
         topLeft = Point2D(left, top);
         width = right - left;
@@ -171,10 +171,10 @@ struct Rect {
     }
     Rect &operator|=(const Point2D &other) {
         // minimally include "other" point within this rectangle
-        float left = min(topLeft.x, other.x);
-        float right = max(topLeft.x, other.x);
-        float top = min(topLeft.y, other.y);
-        float bottom = max(topLeft.y, other.y);
+        float left = std::min(topLeft.x, other.x);
+        float right = std::max(topLeft.x, other.x);
+        float top = std::min(topLeft.y, other.y);
+        float bottom = std::max(topLeft.y, other.y);
 
         topLeft = Point2D(left, top);
         width = right - left;
@@ -189,14 +189,14 @@ struct Rect {
     }
     Rect &operator&=(const Rect &other) {
         // intersection
-        float left = max(topLeft.x, other.topLeft.x);
-        float right = min(topLeft.x + width, other.topLeft.x + other.width);
-        float top = max(topLeft.y, other.topLeft.y);
-        float bottom = min(topLeft.y + height, other.topLeft.y + other.height);
+        float left = std::max(topLeft.x, other.topLeft.x);
+        float right = std::min(topLeft.x + width, other.topLeft.x + other.width);
+        float top = std::max(topLeft.y, other.topLeft.y);
+        float bottom = std::min(topLeft.y + height, other.topLeft.y + other.height);
 
         topLeft = Point2D(left, top);
-        width = max(0.0f, right - left);
-        height = max(0.0f, bottom - top);
+        width = std::max(0.0f, right - left);
+        height = std::max(0.0f, bottom - top);
         if (width == 0.0f && height == 0.0f) { 
             topLeft = Point2D(0.0f, 0.0f);
         }

@@ -10,7 +10,7 @@ namespace CMPUT350 {
 #include "FontData.h"
 
 const uint32_t FPS_LIMIT = 30;
-bool isObjectDead(const shared_ptr<GameObject> obj);
+bool isObjectDead(const std::shared_ptr<GameObject> obj);
 
 GameEngine::GameEngine(unsigned int width, unsigned int height, const std::string& name) : mWindow(std::make_shared<sf::RenderWindow>()) {
     mWindow->create(sf::VideoMode({width, height}), name);
@@ -72,13 +72,13 @@ void GameEngine::Run() {
         // 4. Process collision events
         int objCount = mGameObjects.size();
         for (int i = 0; i < objCount; ++i) {
-            auto firstObj = dynamic_pointer_cast<CollisionObject>(mGameObjects[i]);
+            auto firstObj = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[i]);
             if (!firstObj || !firstObj->IsAlive()) {
                 continue;
             }
 
             for (int j = 0; j < objCount; ++j) {
-                auto secondObj = dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
+                auto secondObj = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
                 if (!secondObj || !secondObj->IsAlive() || i == j) {
                     continue;
                 }
@@ -103,14 +103,14 @@ void GameEngine::Run() {
 
         // 6. Render background
         for(auto& obj : mGameObjects) {
-            if (auto graphic = dynamic_pointer_cast<GraphicsObject>(obj)) {
+            if (auto graphic = std::dynamic_pointer_cast<GraphicsObject>(obj)) {
                 graphic->RenderBackground(&context);
             }
         }
 
         // 7. Render foreground
         for(auto& obj : mGameObjects) {
-            if (auto graphic = dynamic_pointer_cast<GraphicsObject>(obj)) {
+            if (auto graphic = std::dynamic_pointer_cast<GraphicsObject>(obj)) {
                 graphic->RenderForeground(&context);
             }
         }
@@ -120,7 +120,7 @@ void GameEngine::Run() {
     }
 }
 
-bool isObjectDead(const shared_ptr<GameObject> obj) { return !obj->IsAlive(); }
+bool isObjectDead(const std::shared_ptr<GameObject> obj) { return !obj->IsAlive(); }
 
 bool GameEngine::ProcessEvents(GameContext *context)
 {
