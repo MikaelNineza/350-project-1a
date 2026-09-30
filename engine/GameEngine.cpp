@@ -42,20 +42,17 @@ void GameEngine::Run() {
     DrawContext drawContext(mWindow, mFont);
     GameContext context{this, &drawContext};
 
-    while (true)  // window is open
+    while (mWindow->isOpen())  // window is open
     {
         // 0. Remove any objects that are now dead
         mGameObjects.erase(std::remove_if(mGameObjects.begin(), mGameObjects.end(), isObjectDead), mGameObjects.end());
 
         // 1. Activate and initialize any objects added during the last frame
-        for (auto& obj : mNewObjects) {
+        std::vector<std::shared_ptr<GameObject>> temp;
+        temp.swap(mNewObjects);
+        for (auto& obj : temp) {
             obj->Initialize(&context);
             mGameObjects.push_back(std::move(obj));
-        }
-        mNewObjects.clear();
-
-        if (mGameObjects.empty()) {
-            break;
         }
 
         // 2. Process events
@@ -73,13 +70,13 @@ void GameEngine::Run() {
         int objCount = mGameObjects.size();
         for (int i = 0; i < objCount; ++i) {
             auto firstObj = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[i]);
-            if (!firstObj || !firstObj->IsAlive()) {
+            if (!firstObj) {
                 continue;
             }
 
             for (int j = 0; j < objCount; ++j) {
                 auto secondObj = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
-                if (!secondObj || !secondObj->IsAlive() || i == j) {
+                if (!secondObj) {
                     continue;
                 }
 
@@ -88,6 +85,7 @@ void GameEngine::Run() {
 
                 if (overlap.width > 0 && overlap.height > 0) {
                     firstObj->CollisionEnter(secondObj);
+                    secondObj->CollisionEnter(firstObj);
                 }
 
             }
