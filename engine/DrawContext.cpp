@@ -29,8 +29,8 @@ void DrawContext::DrawText(const std::string &text, int pixelSize, Point2D p, RG
 void DrawContext::DrawCircle(Point2D p, float radius, RGBColor c) {
     sf::CircleShape circle(radius);
     circle.setPosition(sf::Vector2f(p.x, p.y));
+    circle.setOrigin({radius, radius});
     circle.setFillColor(sf::Color(c.r, c.g, c.b));
-
     mWindow->draw(circle);
 }
 
@@ -65,12 +65,20 @@ void DrawContext::FrameRect(Rect r, float width, RGBColor c) {
  * relative to the world offset and rendered onto the associated window.
  */
 void DrawContext::DrawLine(Point2D from, Point2D to, float width, RGBColor c) {
-    sf::ConvexShape line(2);
-
-    line.setPoint(0, {from.x, from.y});
-    line.setPoint(1, {to.x, to.y});
-    line.setOutlineThickness(width);
-    line.setOutlineColor(sf::Color(c.r, c.g, c.b));
+    sf::ConvexShape line(4);
+    float len = static_cast<float>(from.Distance(to));
+    float angle = std::atan2(to.y - from.y, to.x - from.x);
+    
+    line.setPoint(0, {0.f, 0.f});
+    line.setPoint(1, {len, 0.f});
+    line.setPoint(2, {len, width});
+    line.setPoint(3, {0.f, width});
+    // Sets the midpoint of the left side as the pivot, moves it to "from" and rotates it towards "to"
+    line.setOrigin({0.f, width / 2.f});
+    line.setPosition({from.x, from.y});
+    line.setRotation(sf::radians(angle));
+    
+    line.setFillColor(sf::Color(c.r, c.g, c.b));
 
     mWindow->draw(line);
 }
