@@ -143,7 +143,7 @@ struct Rect {
     float width, height;
 
     Rect(float left, float top, float width, float height)
-        : topLeft(Point2D(top, left)), width(width), height(height) {}
+        : topLeft(Point2D(left, top)), width(width), height(height) {}
 
     Rect(Point2D tl = {0, 0}, int w = 0, int h = 0) : topLeft(tl), width(w), height(h) {}
 
