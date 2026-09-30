@@ -42,7 +42,7 @@ void GameEngine::Run() {
     DrawContext drawContext(mWindow, mFont);
     GameContext context{this, &drawContext};
 
-    while (true)  // window is open
+    while (mWindow->isOpen())  // window is open
     {
         // 0. Remove any objects that are now dead
         mGameObjects.erase(std::remove_if(mGameObjects.begin(), mGameObjects.end(), isObjectDead), mGameObjects.end());
@@ -53,10 +53,6 @@ void GameEngine::Run() {
         for (auto& obj : temp) {
             obj->Initialize(&context);
             mGameObjects.push_back(std::move(obj));
-        }
-
-        if (mGameObjects.empty()) {
-            break;
         }
 
         // 2. Process events
