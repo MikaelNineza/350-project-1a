@@ -112,7 +112,7 @@ void GameEngine::Run() {
                 continue;
             }
 
-            for (int j = 0; j < objCount; ++j) {
+            for (int j = i + 1; j < objCount; ++j) {
                 auto secondObj = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
                 if (!secondObj) {
                     continue;
