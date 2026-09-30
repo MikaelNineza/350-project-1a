@@ -6,6 +6,7 @@ namespace CMPUT350 {
 class GameEngine;
 }
 
+#include <memory>
 #include "EngineView.h"
 #include "GameObject.h"
 #include "MathUtil.h"
@@ -29,9 +30,13 @@ public:
 
     void Run();
 
+    bool ProcessEvents(GameContext *context);
+
 private:
-    //	std::shared_ptr<sf::RenderWindow> mWindow;
-    //	std::shared_ptr<sf::Font> mFont;
+    std::shared_ptr<sf::RenderWindow> mWindow;
+    std::shared_ptr<sf::Font> mFont;
+    std::vector<std::shared_ptr<GameObject>> mGameObjects;
+    std::vector<std::shared_ptr<GameObject>> mNewObjects;
 };
 
 }  // namespace CMPUT350
