@@ -2,7 +2,9 @@
 #include "Enemy.h"
 #include "Player.h"
 #include <vector>
-#define BULLET_SPEED 15.0f // testing
+
+#define BULLET_SPEED 20.0f
+#define BULLET_SIZE 5.f
 
 Bullet::Bullet(CMPUT350::Point2D location, CMPUT350::Point2D heading, bool player) : location(location), prev_location(location), heading(heading), player(player), isAlive(true)
 {
@@ -27,6 +29,7 @@ void Bullet::Update(CMPUT350::GameContext* context)
 
 void Bullet::LateUpdate(CMPUT350::GameContext* context)
 {
+    // kill bullet if it's out of bounds
     int screen_width = context->ScreenContext->GetWindowWidth();
     int screen_height = context->ScreenContext->GetWindowHeight();
     if (location.x <= 0 || location.x >= screen_width || location.y <= 0 || location.y >= screen_height) {
@@ -46,7 +49,8 @@ void Bullet::RenderBackground(CMPUT350::GameContext* context)
 
 void Bullet::RenderForeground(CMPUT350::GameContext* context)
 {
-    context->ScreenContext->DrawRect(GetBounds(), CMPUT350::Colors::yellow);
+    // bullet rendered as a line
+    context->ScreenContext->DrawLine(prev_location, location, BULLET_SIZE, CMPUT350::Colors::white);
 }
 
 void Bullet::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)
@@ -83,12 +87,11 @@ bool Bullet::IsAlive() const
 const CMPUT350::Rect& Bullet::GetBounds()
 {
     static CMPUT350::Rect sBounds(0, 0, 0, 0);
-    CMPUT350::Rect empty(0, 0, 0, 0);
-    /*sBounds = empty;
-    sBounds |= prev_location;
-    sBounds |= location;*/
-    // TESTING
-    auto topLeft = location - 5;
-    sBounds = CMPUT350::Rect(topLeft, 10, 10);
+
+    auto topLeft = location - BULLET_SIZE / 2.f;
+    auto topLeftPrev = prev_location - BULLET_SIZE / 2.f;
+    sBounds = CMPUT350::Rect(topLeft, BULLET_SIZE, BULLET_SIZE);
+    sBounds |= CMPUT350::Rect(topLeftPrev, BULLET_SIZE, BULLET_SIZE);
+    
     return sBounds;
 }

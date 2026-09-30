@@ -1,6 +1,9 @@
 #include "Enemy.h"
 #include "Bullet.h"
 
+#define ENEMY_WIDTH 40.f
+#define ENEMY_HEIGHT 40.f
+
 Enemy::Enemy(CMPUT350::Point2D loc) : loc(loc), isAlive(true)
 {
 }
@@ -32,7 +35,6 @@ void Enemy::RenderBackground(CMPUT350::GameContext* context)
 
 void Enemy::RenderForeground(CMPUT350::GameContext* context)
 {
-    // TODO: make it look better than just a rectangle
     context->ScreenContext->DrawRect(GetBounds(), CMPUT350::Colors::red);
 }
 
@@ -54,7 +56,7 @@ bool Enemy::IsAlive() const
 const CMPUT350::Rect& Enemy::GetBounds()
 {
     static CMPUT350::Rect sBounds(0, 0, 0, 0);
-    auto topLeft = loc - 20;
-    sBounds = CMPUT350::Rect(topLeft, 40, 40); // enemy is 40x40 pixels (?) sample
+    auto topLeft = loc - CMPUT350::Point2D(ENEMY_WIDTH / 2.f, ENEMY_HEIGHT / 2.f);
+    sBounds = CMPUT350::Rect(topLeft, ENEMY_WIDTH, ENEMY_HEIGHT);
     return sBounds;
 }

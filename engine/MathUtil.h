@@ -160,9 +160,10 @@ struct Rect {
         // minimally include "other" rectangle within this one
         // calculate and set new fields
         float left = std::min(topLeft.x, other.topLeft.x);
-        float right = std::max(topLeft.x, other.topLeft.x);
         float top = std::min(topLeft.y, other.topLeft.y);
-        float bottom = std::max(topLeft.y, other.topLeft.y);
+
+        float right = std::max(topLeft.x + width, other.topLeft.x + other.width);
+        float bottom = std::max(topLeft.y + height, other.topLeft.y + other.height);
 
         topLeft = Point2D(left, top);
         width = right - left;
@@ -171,14 +172,8 @@ struct Rect {
     }
     Rect &operator|=(const Point2D &other) {
         // minimally include "other" point within this rectangle
-        float left = std::min(topLeft.x, other.x);
-        float right = std::max(topLeft.x, other.x);
-        float top = std::min(topLeft.y, other.y);
-        float bottom = std::max(topLeft.y, other.y);
-
-        topLeft = Point2D(left, top);
-        width = right - left;
-        height = bottom - top;
+        Rect pt(other, 0.f, 0.f);
+        *this |= pt;
         return *this;
     }
     Rect &operator|=(const Line &other) {
@@ -212,7 +207,7 @@ struct Rect {
         return rect;
     }
     void Inset(int inset) {
-        // shrink each size by "inset" units
+        // shrink each side by "inset" units
         topLeft.x += inset;
         topLeft.y += inset;
         width -= 2 * inset;
