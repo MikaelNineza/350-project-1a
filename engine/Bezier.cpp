@@ -1,4 +1,5 @@
 #include "Bezier.h"
+#include <cassert>
 
 namespace CMPUT350 {
 
@@ -14,6 +15,7 @@ Point2D Bezier::GetSlope(float t) const {
 }
 
 Point2D Bezier::GetPoint(const std::vector<Point2D> &pts, float t) {
+    if (pts.size() < 2) return Point2D();
     std::vector<Point2D> tmp;
     for (size_t x = 0; x < pts.size()-1; x++) {
         tmp.push_back(pts[x]*(1.0f-t) + pts[x+1]*t);
@@ -30,6 +32,7 @@ Point2D Bezier::GetPoint(const std::vector<Point2D> &pts, float t) {
 }
 
 Point2D Bezier::GetSlope(const std::vector<Point2D> &pts, float t) {
+    if (pts.size() < 4) return Point2D();
     auto p1 = pts[0];
     auto p2 = pts[1];
     auto p3 = pts[2];
