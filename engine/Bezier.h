@@ -15,6 +15,7 @@ public:
     
     static Point2D GetPoint(const std::vector<Point2D> &pts, float t);
     static Point2D GetSlope(const std::vector<Point2D> &pts, float t);
+    static std::vector<Point2D> GetSegment(const std::vector<Point2D> &pts, int t);
 private:
     std::vector<Point2D> points;
 };
