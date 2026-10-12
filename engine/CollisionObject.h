@@ -1,10 +1,11 @@
 #ifndef COLLISION_OBJECT_H
 #define COLLISION_OBJECT_H
 
-#include <memory>
 
 #include "GraphicsObject.h"
 #include "MathUtil.h"
+#include <memory>
+#include <vector>
 
 namespace CMPUT350 {
 
