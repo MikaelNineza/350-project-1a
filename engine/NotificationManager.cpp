@@ -23,7 +23,7 @@ void NotificationManager::Unregister(std::weak_ptr<GameObject> object, const std
         for (int i = 0; i < mListeners[key].size(); ++i) {
             auto ptr =  mListeners[key][i];
             // https://en.cppreference.com/cpp/memory/weak_ptr/owner_before
-            if (!ptr.owner_before(object) && object.owner_before(ptr)) {
+            if (!ptr.owner_before(object) && !object.owner_before(ptr)) {
                 idx = i;
                 break;
             }
@@ -53,7 +53,7 @@ bool isObjectExpired(const std::weak_ptr<GameObject> obj) { return obj.expired()
 bool isObjectListening(const std::vector<std::weak_ptr<GameObject>>& vec, const std::weak_ptr<GameObject>& target) {
     for (const auto& ptr: vec) {
         // https://en.cppreference.com/cpp/memory/weak_ptr/owner_before
-        if (!ptr.owner_before(target) && target.owner_before(ptr)) {
+        if (!ptr.owner_before(target) && !target.owner_before(ptr)) {
             return true;
         }
     }

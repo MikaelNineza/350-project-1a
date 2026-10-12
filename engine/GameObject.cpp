@@ -8,7 +8,7 @@ void GameObject::Update(GameContext *context) { return; }
 void GameObject::LateUpdate(GameContext *context) { return; }
 void GameObject::RenderUI(GameContext *contextrender) { return; }
 bool GameObject::HandleKeyEvent(GameContext *context, char key) { return false; }
-bool GameObject::IsAlive() const { return true; }
-void GameObject::Kill() {}
+bool GameObject::IsAlive() const { return mIsAlive; }
+void GameObject::Kill() { mIsAlive = false; }
 void GameObject::ReceiveNotification(const std::string& key) {}
 }  // namespace CMPUT350
