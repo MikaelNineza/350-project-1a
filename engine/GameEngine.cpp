@@ -7,7 +7,7 @@
 
 /// @brief
 namespace CMPUT350 {
-#include "FontData.h"
+    #include "FontData.h"
 
 const uint32_t FPS_LIMIT = 30;
 bool isObjectDead(const std::shared_ptr<GameObject> obj);
@@ -78,10 +78,14 @@ void GameEngine::AddGameObject(std::shared_ptr<GameObject> gameObject) {
  */
 void GameEngine::Run() {
     DrawContext drawContext(mWindow, mFont);
-    GameContext context{this, &drawContext};
+    DrawContext guiContext(mWindow, mFont);
+    GameContext context{this, &drawContext, &guiContext};
+    context.mNotificationManager = &mNotificationManager;
+    context.currentFrame = mCurrFrame;
 
     while (mWindow->isOpen())  // window is open
     {
+        context.currentFrame = mCurrFrame;
         // 0. Remove any objects that are now dead
         mGameObjects.erase(std::remove_if(mGameObjects.begin(), mGameObjects.end(), isObjectDead), mGameObjects.end());
 
@@ -89,6 +93,7 @@ void GameEngine::Run() {
         std::vector<std::shared_ptr<GameObject>> temp;
         temp.swap(mNewObjects);
         for (auto& obj : temp) {
+            context.CurrObject = obj;
             obj->Initialize(&context);
             mGameObjects.push_back(std::move(obj));
         }
@@ -101,7 +106,8 @@ void GameEngine::Run() {
 
         // 3. Update game objects
         for(auto& obj : mGameObjects) {
-                obj->Update(&context);
+            context.CurrObject = obj;
+            obj->Update(&context);
         }
 
         // 4. Process collision events
@@ -131,7 +137,8 @@ void GameEngine::Run() {
 
         // 5. Late updates
         for(auto& obj : mGameObjects) {
-                obj->LateUpdate(&context);
+            context.CurrObject = obj;
+            obj->LateUpdate(&context);
         }
 
         // Clear window
@@ -140,6 +147,9 @@ void GameEngine::Run() {
         // 6. Render background
         for(auto& obj : mGameObjects) {
             if (auto graphic = std::dynamic_pointer_cast<GraphicsObject>(obj)) {
+                drawContext.SetContextOffset(graphic->GetLocation());
+                drawContext.SetContextRotation(graphic->GetRotation());
+                context.CurrObject = graphic;
                 graphic->RenderBackground(&context);
             }
         }
@@ -147,12 +157,21 @@ void GameEngine::Run() {
         // 7. Render foreground
         for(auto& obj : mGameObjects) {
             if (auto graphic = std::dynamic_pointer_cast<GraphicsObject>(obj)) {
+                drawContext.SetContextOffset(graphic->GetLocation());
+                drawContext.SetContextRotation(graphic->GetRotation());
+                context.CurrObject = graphic;
                 graphic->RenderForeground(&context);
             }
         }
 
+        for(auto& obj : mGameObjects) {
+            context.CurrObject = obj;
+            obj->RenderUI(&context);
+        }
+
         // Actually render to window
         mWindow->display();
+        ++mCurrFrame;
     }
 }
 
@@ -186,15 +205,57 @@ bool GameEngine::ProcessEvents(GameContext *context)
 		else if (event->is<sf::Event::Resized>())
 		{
 		}
-		else if (const auto* keyPressed = event->getIf<sf::Event::TextEntered>())
-		{
-			for(auto& obj : mGameObjects) {
-                obj->HandleKeyEvent(context, keyPressed->unicode);
+        else if (const auto* keyDown = event ->getIf<sf::Event::KeyPressed>()) {
+            int keyCode = static_cast<int>(keyDown->scancode);
+            if (mNotificationKeyDown.find(keyCode) != mNotificationKeyDown.end()) {
+                for (auto& message : mNotificationKeyDown[keyCode]) {
+                    mNotificationManager.Notify(message);
+                }
             }
-		}       
+        }
+        else if (const auto* keyUp = event ->getIf<sf::Event::KeyReleased>()) {
+            int keyCode = static_cast<int>(keyUp->scancode);
+            if (mNotificationKeyUp.find(keyCode) != mNotificationKeyUp.end()) {
+                for (auto& message : mNotificationKeyUp[keyCode]) {
+                    mNotificationManager.Notify(message);
+                }
+            }
+        }      
 	}
 
     return false;
+}
+
+void GameEngine::InstallKeyDownNotification(int key, const std::string &notification) {
+    if (mNotificationKeyDown.find(key) == mNotificationKeyDown.end()) {
+        mNotificationKeyDown[key] = {notification};
+    } else if (std::find(mNotificationKeyDown[key].begin(), mNotificationKeyDown[key].end(), notification) == mNotificationKeyDown[key].end()) {
+        mNotificationKeyDown[key].push_back(notification);
+    }
+}
+
+void GameEngine::InstallKeyUpNotification(int key, const std::string &notification) {
+    if (mNotificationKeyUp.find(key) == mNotificationKeyUp.end()) {
+        mNotificationKeyUp[key] = {notification};
+    } else if (std::find(mNotificationKeyUp[key].begin(), mNotificationKeyUp[key].end(), notification) == mNotificationKeyUp[key].end()) {
+        mNotificationKeyUp[key].push_back(notification);
+    }
+}
+
+GameEngine::const_iterator GameEngine::cbegin() const {
+    return mGameObjects.cbegin();
+}
+
+GameEngine::const_iterator GameEngine::cend() const {
+    return mGameObjects.cend();
+}
+
+GameEngine::const_iterator GameEngine::begin() const {
+    return mGameObjects.begin();
+}
+
+GameEngine::const_iterator GameEngine::end() const {
+    return mGameObjects.end();
 }
 
 }  // namespace CMPUT350
