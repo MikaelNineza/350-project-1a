@@ -357,6 +357,10 @@ struct Circle {
     Circle(float x, float y, float r) : center(x, y), radius(r) {}
 };
 
+static std::ostream &operator<<(std::ostream &os, const Circle &c) {
+    os << "Center: " << c.center << " Radius: " << c.radius;
+}
+
 /**
  * @brief An axis-aligned rectangle stored as a top-left corner plus size.
  *

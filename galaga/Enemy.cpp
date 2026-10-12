@@ -1,15 +1,17 @@
 #include "Enemy.h"
 #include "Bullet.h"
+#include "Player.h"
 
 #define ENEMY_WIDTH 40.f
 #define ENEMY_HEIGHT 40.f
+#define INCREMENT_T 0.05f;
 
 /**
  * @brief Constructs an Enemy at the given position.
  *
  * @param loc Center position of the enemy, in screen coordinates.
  */
-Enemy::Enemy(CMPUT350::Point2D loc) : loc(loc), isAlive(true)
+Enemy::Enemy(CMPUT350::Point2D loc, const std::vector<CMPUT350::Point2D> &path) : loc(loc), path(path), t(0.f), isAlive(true)
 {
 }
 
@@ -22,7 +24,7 @@ Enemy::Enemy(CMPUT350::Point2D loc) : loc(loc), isAlive(true)
  */
 void Enemy::Initialize(CMPUT350::GameContext* context)
 {
-    return;
+    this->context = context;
 }
 
 /**
@@ -32,6 +34,7 @@ void Enemy::Initialize(CMPUT350::GameContext* context)
  */
 void Enemy::Update(CMPUT350::GameContext* context)
 {
+
     return;
 }
 
@@ -81,14 +84,26 @@ void Enemy::RenderForeground(CMPUT350::GameContext* context)
 /**
  * @brief Engine callback invoked when the enemy starts colliding with an object.
  *
- * Intentionally empty: Bullet::CollisionEnter handles killing the enemy when
- * it is struck by a player bullet.
+ * Collision consequence to self is managed.
  *
  * @param obj The object the enemy collided with (unused).
  */
 void Enemy::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)
 {
-    return;
+    std::shared_ptr<Bullet> bullet = std::dynamic_pointer_cast<Bullet>(obj);
+    std::shared_ptr<Player> player = std::dynamic_pointer_cast<Player>(obj);
+
+    if (bullet != nullptr) {
+        if (!bullet->IsPlayerBullet()) {
+            return;
+        }
+        if (--health == 0) {
+            Kill();
+        }
+    }
+    if (player != nullptr) {
+        Kill();
+    }
 }
 
 /**
@@ -99,6 +114,7 @@ void Enemy::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj
 void Enemy::Kill()
 {
     isAlive = false;
+    context->mNotificationManager->Notify("enemy died");
 }
 
 /**
@@ -130,3 +146,5 @@ const CMPUT350::Rect& Enemy::GetBounds()
     sBounds = CMPUT350::Rect(topLeft, ENEMY_WIDTH, ENEMY_HEIGHT);
     return sBounds;
 }
+
+CMPUT350::Point2D
