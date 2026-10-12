@@ -3,6 +3,8 @@
 
 #include "CollisionObject.h"
 #include <vector>
+#include <memory>
+#include <string>
 
 class Player : public CMPUT350::CollisionObject
 {
@@ -13,7 +15,6 @@ public:
     void Initialize(CMPUT350::GameContext* context) override;
     void Update(CMPUT350::GameContext* context) override;
     void LateUpdate(CMPUT350::GameContext* context) override;
-    bool HandleKeyEvent(CMPUT350::GameContext* context, char key) override;
     bool IsAlive() const override;
     void Kill() override;
 
@@ -24,12 +25,21 @@ public:
 
     // Collision Object Functions
     void CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj) override;
+
+    void ReceiveNotification(const std::string& key) override;
+    const std::vector<CMPUT350::Shape>& GetShapes() override;
     const CMPUT350::Rect& GetBounds() override;
+    CMPUT350::Point2D GetLocation() const override;
+    float GetRotation() const override;
 
 private: 
     CMPUT350::Point2D loc;
     bool isAlive;
     std::vector<std::weak_ptr<CMPUT350::CollisionObject>> bullets;
+    std::vector<CMPUT350::Shape> shapes;
+    bool requestFire;
+    bool requestLeft;
+    bool requestRight;
 };
 
 #endif
