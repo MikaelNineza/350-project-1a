@@ -197,4 +197,20 @@ bool GameEngine::ProcessEvents(GameContext *context)
     return false;
 }
 
+GameEngine::const_iterator GameEngine::cbegin() const {
+    return mGameObjects.cbegin();
+}
+
+GameEngine::const_iterator GameEngine::cend() const {
+    return mGameObjects.cend();
+}
+
+GameEngine::const_iterator GameEngine::begin() const {
+    return mGameObjects.begin();
+}
+
+GameEngine::const_iterator GameEngine::end() const {
+    return mGameObjects.end();
+}
+
 }  // namespace CMPUT350
