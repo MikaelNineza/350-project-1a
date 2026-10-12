@@ -17,6 +17,8 @@ public:
     virtual bool IsAlive() const;
     virtual void Kill();
     virtual void ReceiveNotification(const std::string& key);
+private:
+    bool mIsAlive = true;
 };
 
 }  // namespace CMPUT350
