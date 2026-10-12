@@ -147,6 +147,8 @@ void GameEngine::Run() {
         // 6. Render background
         for(auto& obj : mGameObjects) {
             if (auto graphic = std::dynamic_pointer_cast<GraphicsObject>(obj)) {
+                drawContext.SetContextOffset(graphic->GetLocation());
+                drawContext.SetContextRotation(graphic->GetRotation());
                 context.CurrObject = graphic;
                 graphic->RenderBackground(&context);
             }
@@ -155,6 +157,8 @@ void GameEngine::Run() {
         // 7. Render foreground
         for(auto& obj : mGameObjects) {
             if (auto graphic = std::dynamic_pointer_cast<GraphicsObject>(obj)) {
+                drawContext.SetContextOffset(graphic->GetLocation());
+                drawContext.SetContextRotation(graphic->GetRotation());
                 context.CurrObject = graphic;
                 graphic->RenderForeground(&context);
             }
