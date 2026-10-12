@@ -147,4 +147,58 @@ int DrawContext::GetWindowWidth() { return mWindow->getSize().x; }
  */
 int DrawContext::GetWindowHeight() { return mWindow->getSize().y; }
 
+void DrawContext::SetContextOffset(Point2D p) {
+    mOffset = p;
+}
+
+void DrawContext::SetContextRotation(float rotation) {
+    // Note for future: this might not work since positive y goes down.
+    // After we complete the implementation if rotation seems wrong, fix here!
+    mRotation = rotation;
+}
+
+Point2D DrawContext::Transform(Point2D p) {
+    Point2D pNew;
+    pNew.x = p.x * cos(mRotation) - p.y * sin(mRotation) + mOffset.x;
+    pNew.y = p.x * sin(mRotation) + p.y * cos(mRotation) + mOffset.y;
+
+    return pNew;
+}
+
+Point2D DrawContext::ReverseTransform(Point2D p) {
+    Point2D pNew;
+    float tempX = p.x - mOffset.x;
+    float tempY = p.y - mOffset.y;
+
+    pNew.x = (tempX * cos(mRotation) + tempY * sin(mRotation));
+    pNew.y = (tempY * cos(mRotation) - tempX * sin(mRotation));
+
+    return pNew;
+}
+
+Rect DrawContext::Transform(Rect r) {
+    Point2D topLeft = r.topLeft;
+    Point2D topRight = topLeft;
+    Point2D bottomLeft = topLeft;
+    Point2D bottomRight = topLeft;
+
+    topRight += {r.width, 0};
+    bottomLeft += {0, r.height};
+    bottomRight += {r.width, r.height};
+
+    topLeft = Transform(topLeft);
+    topRight = Transform(topRight);
+    bottomLeft = Transform(bottomLeft);
+    bottomRight = Transform(bottomRight);
+
+    float minX = std::min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x});
+    float minY = std::min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y});
+    float maxX = std::max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x});
+    float maxY = std::max({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y});
+
+    Rect rNew(minX, minY, maxX-minX, maxY-minY);
+
+    return rNew;
+}
+
 }  // namespace CMPUT350

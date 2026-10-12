@@ -41,8 +41,18 @@ public:
     int GetWindowHeight();
 
 private:
+    friend class GameEngine;
+	void SetContextOffset(Point2D p);
+	void SetContextRotation(float rotation);
+	Point2D Transform(Point2D p);
+	Point2D ReverseTransform(Point2D p);
+	Rect Transform(Rect r);
+
     std::shared_ptr<sf::RenderWindow> mWindow;
     std::shared_ptr<sf::Font> mFont;
+    Point2D mOffset;
+    float mRotation = 0;
+
 };
 
 }  // namespace CMPUT350
