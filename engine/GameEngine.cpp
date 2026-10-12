@@ -197,6 +197,22 @@ bool GameEngine::ProcessEvents(GameContext *context)
     return false;
 }
 
+void GameEngine::InstallKeyDownNotification(int key, const std::string &notification) {
+    if (mNotificationKeyDown.find(key) == mNotificationKeyDown.end()) {
+        mNotificationKeyDown[key] = {notification};
+    } else if (std::find(mNotificationKeyDown[key].begin(), mNotificationKeyDown[key].end(), notification) != mNotificationKeyDown[key].end()) {
+        mNotificationKeyDown[key].push_back(notification);
+    }
+}
+
+void GameEngine::InstallKeyUpNotification(int key, const std::string &notification) {
+    if (mNotificationKeyUp.find(key) == mNotificationKeyUp.end()) {
+        mNotificationKeyUp[key] = {notification};
+    } else if (std::find(mNotificationKeyUp[key].begin(), mNotificationKeyUp[key].end(), notification) != mNotificationKeyUp[key].end()) {
+        mNotificationKeyUp[key].push_back(notification);
+    }
+}
+
 GameEngine::const_iterator GameEngine::cbegin() const {
     return mGameObjects.cbegin();
 }
