@@ -47,8 +47,8 @@ private:
     std::shared_ptr<sf::Font> mFont;
     std::vector<std::shared_ptr<GameObject>> mGameObjects;
     std::vector<std::shared_ptr<GameObject>> mNewObjects;
-    std::unordered_map<int, std::vector<std::string>> mNotificationKeyUp;
     std::unordered_map<int, std::vector<std::string>> mNotificationKeyDown;
+    std::unordered_map<int, std::vector<std::string>> mNotificationKeyUp;
 };
 
 }  // namespace CMPUT350
