@@ -24,10 +24,12 @@ DrawContext::DrawContext(std::shared_ptr<sf::RenderWindow> window, std::shared_p
  */
 void DrawContext::DrawCenteredText(const std::string &text, int pixelSize, Point2D p, RGBColor c) {
     sf::Text textToDraw(*mFont);
+    p = Transform(p);
     textToDraw.setString(text);
     textToDraw.setFillColor(sf::Color(c.r, c.g, c.b));
     textToDraw.setPosition(sf::Vector2f(p.x, p.y));
     textToDraw.setLineAlignment(sf::Text::LineAlignment::Center);
+    textToDraw.setRotation(sf::radians(mRotation));
     textToDraw.setCharacterSize(pixelSize);
 
     mWindow->draw(textToDraw);
@@ -43,9 +45,11 @@ void DrawContext::DrawCenteredText(const std::string &text, int pixelSize, Point
  */
 void DrawContext::DrawText(const std::string &text, int pixelSize, Point2D p, RGBColor c) {
     sf::Text textToDraw(*mFont);
+    p = Transform(p);
     textToDraw.setString(text);
     textToDraw.setFillColor(sf::Color(c.r, c.g, c.b));
     textToDraw.setPosition(sf::Vector2f(p.x, p.y));
+    textToDraw.setRotation(sf::radians(mRotation));
     textToDraw.setCharacterSize(pixelSize);
 
     mWindow->draw(textToDraw);
@@ -60,6 +64,7 @@ void DrawContext::DrawText(const std::string &text, int pixelSize, Point2D p, RG
  */
 void DrawContext::DrawCircle(Point2D p, float radius, RGBColor c) {
     sf::CircleShape circle(radius);
+    p = Transform(p);
     circle.setPosition(sf::Vector2f(p.x, p.y));
     circle.setOrigin({radius, radius});
     circle.setFillColor(sf::Color(c.r, c.g, c.b));
@@ -74,7 +79,9 @@ void DrawContext::DrawCircle(Point2D p, float radius, RGBColor c) {
  */
 void DrawContext::DrawRect(Rect r, RGBColor c) {
     sf::RectangleShape rectangle({r.width, r.height});
-    rectangle.setPosition({r.topLeft.x, r.topLeft.y});
+    Point2D topLeft = Transform(r.topLeft);
+    rectangle.setPosition({topLeft.x, topLeft.y});
+    rectangle.setRotation(sf::radians(mRotation));
     rectangle.setFillColor(sf::Color(c.r, c.g, c.b));
 
     mWindow->draw(rectangle);
@@ -92,7 +99,9 @@ void DrawContext::DrawRect(Rect r, RGBColor c) {
  */
 void DrawContext::FrameRect(Rect r, float width, RGBColor c) {
     sf::RectangleShape rectangle({r.width, r.height});
-    rectangle.setPosition({r.topLeft.x, r.topLeft.y});
+    Point2D topLeft = Transform(r.topLeft);
+    rectangle.setPosition({topLeft.x, topLeft.y});
+    rectangle.setRotation(sf::radians(mRotation));
     rectangle.setOutlineColor(sf::Color(c.r, c.g, c.b));
     rectangle.setFillColor(sf::Color::Transparent);
     rectangle.setOutlineThickness(width);
@@ -116,6 +125,9 @@ void DrawContext::FrameRect(Rect r, float width, RGBColor c) {
  */
 void DrawContext::DrawLine(Point2D from, Point2D to, float width, RGBColor c) {
     sf::ConvexShape line(4);
+    from = Transform(from);
+    to = Transform(to);
+
     float len = static_cast<float>(from.Distance(to));
     float angle = std::atan2(to.y - from.y, to.x - from.x);
     
