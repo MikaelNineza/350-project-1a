@@ -164,6 +164,11 @@ void GameEngine::Run() {
             }
         }
 
+        for(auto& obj : mGameObjects) {
+            context.CurrObject = obj;
+            obj->RenderUI(&context);
+        }
+
         // Actually render to window
         mWindow->display();
         ++mCurrFrame;
