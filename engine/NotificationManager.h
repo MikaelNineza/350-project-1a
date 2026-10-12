@@ -1,13 +1,14 @@
 #ifndef NOTIFICATIONMANAGER_H
 #define NOTIFICATIONMANAGER_H
 
+#include "GameObject.h"
 #include <memory>
 #include <vector>
 #include <unordered_map>
 
+namespace CMPUT350 {
 class NotificationManager {
 
-class GameObject;
 
 public:
     void Register(std::weak_ptr<GameObject> object, const std::string& key);
@@ -16,5 +17,7 @@ public:
 private:
     std::unordered_map<std::string, std::vector<std::weak_ptr<GameObject>>> mListeners;
 };
+
+}
 
 #endif
