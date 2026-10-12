@@ -16,7 +16,6 @@ public:
 	std::weak_ptr<GameObject> CurrObject;
 	NotificationManager *mNotificationManager;
 	int currentFrame;
-
 };
 
 }  // namespace CMPUT350
