@@ -4,90 +4,84 @@
 
 #define ENEMY_WIDTH 40.f
 #define ENEMY_HEIGHT 40.f
-#define INCREMENT_T 0.05f;
+#define PIXELS_PER_FRAME 6.f
+#define SWAY_DIST 10.f
+#define SWAY_SPEED 0.05f
+#define FIRE_NTH_FRAME 60
 
-/**
- * @brief Constructs an Enemy at the given position.
- *
- * @param loc Center position of the enemy, in screen coordinates.
- */
-Enemy::Enemy(CMPUT350::Point2D loc, const std::vector<CMPUT350::Point2D> &path) : loc(loc), path(path), t(0.f), isAlive(true)
+Enemy::Enemy(CMPUT350::Point2D formationLoc, const std::vector<CMPUT350::Point2D> &path) : formationLoc(formationLoc), path(path), t(0.f), isAlive(true), curve(path), onPath(true), attacking(false)
 {
+    loc = path[0];
+    CMPUT350::Rect local(CMPUT350::Point2D(-ENEMY_WIDTH / 2.f, -ENEMY_HEIGHT / 2.f), ENEMY_WIDTH, ENEMY_HEIGHT);
+    shapes.emplace_back(local);
 }
 
-/**
- * @brief Engine hook called once when the enemy is added to the game.
- *
- * Currently does nothing.
- *
- * @param context Shared game context (unused).
- */
 void Enemy::Initialize(CMPUT350::GameContext* context)
 {
-    this->context = context;
 }
 
-/**
- * @brief Per-frame update. Enemies are currently stationary, so this is a no-op.
- *
- * @param context Shared game context (unused).
- */
+bool Enemy::BeginAttack(const std::vector<CMPUT350::Point2D>& attackPath) {
+    if (onPath) {
+        return false;
+    }
+    path = attackPath;
+    curve = CMPUT350::Bezier(path);
+    t = 0.f;
+    onPath = true;
+    attacking = true;
+    return true;
+}
+
 void Enemy::Update(CMPUT350::GameContext* context)
 {
+    if (!isAlive) {
+        context->mNotificationManager->Notify("EnemyDied");
+        return;
+    }
+    // enemy is swaying while in formation
+    if (!onPath) {
+        loc = CMPUT350::Point2D(formationLoc.x + SWAY_DIST * std::sin(context->currentFrame * SWAY_SPEED), formationLoc.y);
+        return;
+    }
 
-    return;
+    auto s = curve.GetSlope(t);
+    t += PIXELS_PER_FRAME / s.Distance(CMPUT350::Point2D(0.f, 0.f)); // increment t
+
+    // moving along a path (either going into formation or attacking)
+    if (t < (path.size() - 1) / 3.f) {
+        loc = curve.GetPoint(t);
+        if (attacking && context->currentFrame % FIRE_NTH_FRAME == 0) {
+            std::shared_ptr<Bullet> bullet = std::make_shared<Bullet>(loc, CMPUT350::Point2D(0.f, 1.f), false, context->CurrObject);
+            context->mEngineView->AddGameObject(bullet);
+        }
+    }
+    // done attacking, so move back to formation
+    else if (attacking) {
+        // curve = (a new path that goes back to formation)
+        t = 0.f;
+        attacking = false;
+    }
+    else {
+        onPath = false;
+        loc = formationLoc;
+    }
 }
 
-/**
- * @brief Post-update step. Currently does nothing.
- *
- * @param context Shared game context (unused).
- */
 void Enemy::LateUpdate(CMPUT350::GameContext* context)
 {
     return;
 }
 
-/**
- * @brief Handles a keyboard event. Enemies do not respond to input.
- *
- * @param context Shared game context (unused).
- * @param key     The key that was pressed (unused).
- * @return Always false, since the event is never consumed.
- */
-bool Enemy::HandleKeyEvent(CMPUT350::GameContext* context, char key)
-{
-    return false;
-}
-
-/**
- * @brief Draws background-layer content. Enemies have none.
- *
- * @param context Shared game context (unused).
- */
 void Enemy::RenderBackground(CMPUT350::GameContext* context)
 {
     return;
 }
 
-/**
- * @brief Draws the enemy in the foreground layer as a solid red rectangle
- *        covering its bounding box.
- *
- * @param context Shared game context; provides the drawing surface.
- */
 void Enemy::RenderForeground(CMPUT350::GameContext* context)
 {
-    context->ScreenContext->DrawRect(GetBounds(), CMPUT350::Colors::red);
+    context->ScreenContext->DrawRect(shapes[0].shape.rect, CMPUT350::Colors::red);
 }
 
-/**
- * @brief Engine callback invoked when the enemy starts colliding with an object.
- *
- * Collision consequence to self is managed.
- *
- * @param obj The object the enemy collided with (unused).
- */
 void Enemy::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)
 {
     std::shared_ptr<Bullet> bullet = std::dynamic_pointer_cast<Bullet>(obj);
@@ -106,39 +100,16 @@ void Enemy::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj
     }
 }
 
-/**
- * @brief Marks the enemy as dead.
- *
- * The engine checks IsAlive() and removes the enemy on its next cleanup pass.
- */
 void Enemy::Kill()
 {
     isAlive = false;
-    context->mNotificationManager->Notify("enemy died");
 }
 
-/**
- * @brief Reports whether the enemy is still alive.
- *
- * @return true if the enemy has not been killed, false otherwise.
- */
 bool Enemy::IsAlive() const
 {
     return isAlive;
 }
 
-/**
- * @brief Computes the enemy's axis-aligned bounding box.
- *
- * The box is 40x40 pixels and centered on the enemy's location. It is used for
- * both collision detection and rendering.
- *
- * @note The returned reference points to a function-local static Rect that is
- *       shared by all Enemy instances and overwritten on every call. Copy the
- *       value if you need it to survive another call to GetBounds().
- *
- * @return Reference to the enemy's current bounds.
- */
 const CMPUT350::Rect& Enemy::GetBounds()
 {
     static CMPUT350::Rect sBounds(0, 0, 0, 0);
@@ -147,4 +118,22 @@ const CMPUT350::Rect& Enemy::GetBounds()
     return sBounds;
 }
 
-CMPUT350::Point2D
+const std::vector<CMPUT350::Shape>& Enemy::GetShapes() {
+    return shapes;
+}
+
+CMPUT350::Point2D Enemy::GetLocation() const {
+    return loc;
+}
+
+float Enemy::GetRotation() const {
+    if (!onPath) {
+        return 0.f;
+    }
+    auto heading = curve.GetSlope(t);
+    return std::atan2f(heading.y, heading.x);
+}
+
+bool Enemy::InFormation() const {
+    return !onPath;
+}
