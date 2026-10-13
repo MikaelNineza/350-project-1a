@@ -35,7 +35,12 @@ bool Enemy::BeginAttack(const std::vector<CMPUT350::Point2D>& attackPath) {
 void Enemy::Update(CMPUT350::GameContext* context)
 {
     if (!isAlive) {
-        context->mNotificationManager->Notify("EnemyDied");
+        if (onPath) {
+            context->mNotificationManger->Notify("EnemyDiedWhileMoving");
+        }
+        else {
+            context->mNotificationManager->Notify("EnemyDied");
+        }
         return;
     }
     // enemy is swaying while in formation
