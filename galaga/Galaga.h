@@ -3,18 +3,26 @@
 
 #include "MathUtil.h"
 #include <vector>
+#include <string>
 
-namespace CMPUT350 {
-    class Bezier {
-    public:
-        Bezier(const std::vector<Point2D> &pts);
-        
-        Point2D GetPoint(float t) const;
-        Point2D GetSlope(float t) const;
-        
-        static Point2D GetPoint(const std::vector<Point2D> &pts, float t);
-        static Point2D GetSlope(const std::vector<Point2D> &pts, float t);	
-    };
-}
+class Galaga : public CMPUT350::GameObject {
+public:
+    Galaga(int width, int height);
+    void Initialize(CMPUT350::GameContext* context) override;
+    void Update(CMPUT350::GameContext* context) override;
+    void RenderUI(CMPUT350::GameContext* context) override;
+    void ReceiveNotification(const std::string& key) override;
 
+private:
+    enum class State { InsertCoins, StartGame, Startup, Waves, Gameplay, GameOver };
+    State state;
+    State lastState;
+    int width;
+    int height;
+    int points;
+    int level;
+    int spawnEnemies;
+    int stateStartFrame;
+    std::weak_ptr<Player> mPlayer;
+};
 #endif
