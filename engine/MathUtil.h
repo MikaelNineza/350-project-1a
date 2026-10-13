@@ -334,6 +334,7 @@ static std::ostream &operator<<(std::ostream &os, const Line &l) {
     return os;
 }
 
+struct Rect;
 /**
  * @brief A circle defined by a center and radius.
  */
@@ -355,6 +356,31 @@ struct Circle {
      * @param r Radius.
      */
     Circle(float x, float y, float r) : center(x, y), radius(r) {}
+
+    bool Intersects(const Circle &other) const {
+        Point2D d = center - other.center;
+        return Point2D::Dot(d, d) <= std::pow(radius + other.radius, 2);
+    }
+
+    bool Intersects(const Line &other) const {
+        Point2D closest = other.ClosestPoint(center);
+        Point2D d = center - closest;
+        return Point2D::Dot(d, d) <= radius * radius;
+    }
+
+    bool Intersects(const Rect &other) const {
+        if (other.IsInside(center)) {
+            return true;
+        }
+
+        float left = other.topLeft.x;
+        float top = other.topLeft.y;
+        float right = left + other.width;
+        float bottom = top + other.height;
+
+        return Intersects(Line(left, top, right, top)) || Intersects(Line(right, top, right, bottom)) ||
+            Intersects(Line(right, bottom, left, bottom)) || Intersects(Line(left, bottom, left, top));
+    }
 };
 
 static std::ostream &operator<<(std::ostream &os, const Circle &c) {
@@ -491,6 +517,13 @@ struct Rect {
         return *this;
     }
 
+    // Non mutating version of above. Checks rect intersection.
+    Rect operator&(const Rect &other) const {
+        Rect temp = *this;
+        temp &= other;
+        return temp;
+    }
+
     /**
      * @brief Translates this rectangle in place.
      * @param other Offset added to the top-left corner; size is unchanged.
@@ -546,6 +579,22 @@ struct Rect {
         float y2 = y1 + height;
 
         return x1 <= p.x && p.x <= x2 && y1 <= p.y && p.y <= y2;
+    }
+
+    bool Intersects(const Line &l) const {
+        if (IsInside(l.p1) || IsInside(l.p2)) {
+            return true;
+        }
+
+        float left = topLeft.x;
+        float top = topLeft.y;
+        float right = left + width;
+        float bottom = top + height;
+
+        Point2D temp;
+        return l.Crosses(Line(left, top, right, top), temp) || l.Crosses(Line(right, top, right, bottom), temp) ||
+            l.Crosses(Line(right, bottom, left, bottom), temp) || l.Crosses(Line(left, bottom, left, top), temp);
+
     }
 };
 
