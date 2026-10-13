@@ -297,7 +297,7 @@ struct Line {
      *         intersect, or if they are parallel (including collinear and
      *         overlapping segments).
      */
-    bool Crosses(Line other, Point2D &crossingPoint) const {
+    bool Crosses(const Line &other, Point2D &crossingPoint) const {
         Point2D Q = p1;
         Point2D Q_vec = p2 - p1;
 
