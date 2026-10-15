@@ -534,11 +534,6 @@ struct Rect {
             return true;
         }
 
-        if (IsInside(l.p2)) {
-            collisionPoint = l.p2;
-            return true;
-        }
-
         float left = topLeft.x;
         float top = topLeft.y;
         float right = left + width;

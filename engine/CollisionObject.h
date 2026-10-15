@@ -42,36 +42,24 @@ inline bool LineCollision(const Line &l, const Shape &other, Point2D &collisionP
     return false;
 }
 
-inline bool CollisionMade(const Shape &first, const Shape &second, Point2D &collisionPoint, int &objectLine) {
-    if (first.t == ShapeType::kLine) {
-        objectLine = 1;
+inline bool CollisionMade(const Shape &first, const Shape &second) {
+    if (first.t == ShapeType::kLine || second.t == ShapeType::kLine) {
         return false;
     }
-
-    if (second.t == ShapeType::kLine) {
-        objectLine = 2;
-        return false;
-    }
-
-    objectLine = -1;
 
     if (first.t == ShapeType::kCircle) {
         if (second.t == ShapeType::kCircle) {
             return first.shape.circle.Intersects(second.shape.circle);
         }
-        else if (second.t == ShapeType::kRect) {
-            return first.shape.circle.Intersects(second.shape.rect);
-        }
+        return first.shape.circle.Intersects(second.shape.rect);
     }
 
     if (first.t == ShapeType::kRect) {
         if (second.t == ShapeType::kCircle) {
             return second.shape.circle.Intersects(first.shape.rect);
         }
-        else if (second.t == ShapeType::kRect) {
-            Rect overlap = first.shape.rect & second.shape.rect;
-            return overlap.width > 0 && overlap.height > 0;
-        }
+        Rect overlap = first.shape.rect & second.shape.rect;
+        return overlap.width > 0 && overlap.height > 0;
     }
 
     return false;
