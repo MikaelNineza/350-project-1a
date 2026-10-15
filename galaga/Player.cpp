@@ -6,7 +6,7 @@
 #define PLAYER_WIDTH 40.f
 #define PLAYER_HEIGHT 40.f
 
-Player::Player(CMPUT350::Point2D loc) : loc(loc), isAlive(true), requestFire(false), requestLeft(false), requestRight(false)
+Player::Player(CMPUT350::Point2D loc) : loc(loc), isAlive(true), requestFire(false), requestLeft(false), requestRight(false), lives(2), died(false)
 {
     CMPUT350::Rect local(CMPUT350::Point2D(-PLAYER_WIDTH / 2.f, -PLAYER_HEIGHT / 2.f), PLAYER_WIDTH, PLAYER_HEIGHT);
     auto left_wing = local;
@@ -44,6 +44,11 @@ void Player::Initialize(CMPUT350::GameContext* context)
 
 void Player::Update(CMPUT350::GameContext* context)
 {
+    if (died) {
+        isAlive = false;
+        context->mNotificationManager->Notify("PlayerDied");
+        return;
+    }
     // remove bullets that are no longer in the engine
     // engine responsible for dumping it after checking isAlive
     std::vector<std::weak_ptr<CMPUT350::CollisionObject>> aux;
@@ -123,16 +128,19 @@ void Player::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& ob
         if (bullet->IsPlayerBullet()) {
             return;
         }
-        Kill();
+        TakeDamage();
     }
     if (enemy != nullptr) {
+        TakeDamage();
+    }
+    if (lives == 0) {
         Kill();
     }
 }
 
 void Player::Kill()
 {
-    isAlive = false;
+    died = true;
 }
 
 bool Player::IsAlive() const
@@ -158,4 +166,12 @@ CMPUT350::Point2D Player::GetLocation() const {
 
 float Player::GetRotation() const {
     return 0.f;
+}
+
+int Player::GetLives() const {
+    return lives;
+}
+
+void Player::TakeDamage() {
+    lives--;
 }

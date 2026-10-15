@@ -10,7 +10,7 @@
 Bullet::Bullet(CMPUT350::Point2D location, CMPUT350::Point2D heading, bool player, std::weak_ptr<CMPUT350::GameObject> parent)
                 : location(location), prev_location(location), heading(heading), player(player), isAlive(true), parent(parent)
 {
-    shapes.emplace_back(CMPUT350::Line(-heading.x * BULLET_SPEED, -heading.y * BULLET_SPEED, 0.f, 0.f));
+    shapes.emplace_back(CMPUT350::Line(-BULLET_SPEED, 0.f, 0.f, 0.f));
 }
 
 bool Bullet::IsPlayerBullet()
@@ -53,7 +53,7 @@ void Bullet::RenderBackground(CMPUT350::GameContext* context)
 void Bullet::RenderForeground(CMPUT350::GameContext* context)
 {
     // bullet rendered as a line
-    context->ScreenContext->DrawLine(prev_location, location, BULLET_SIZE, CMPUT350::Colors::white);
+    context->ScreenContext->DrawLine(CMPUT350::Point2D(-BULLET_SPEED, 0.f), CMPUT350::Point2D(0.f, 0.f), BULLET_SIZE, CMPUT350::Colors::white);
 }
 
 void Bullet::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)
