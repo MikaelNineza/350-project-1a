@@ -7,6 +7,13 @@
 #include <vector>
 #include <string>
 
+constexpr float ENEMY_WIDTH = 40.f;
+constexpr float ENEMY_HEIGHT = 40.f;
+constexpr float PIXELS_PER_FRAME = 12.f;
+constexpr float SWAY_DIST = 10.f;
+constexpr float SWAY_SPEED = 0.15f;
+constexpr int FIRE_NTH_FRAME = 60;
+
 class Enemy : public CMPUT350::CollisionObject
 {
 public:
@@ -35,6 +42,7 @@ public:
 
     bool InFormation() const;
     void SetHealth(int newHealth);
+    int GetHealth() const;
 
 private:
     CMPUT350::Point2D loc;
@@ -47,6 +55,8 @@ private:
     bool onPath; // true if its moving along a bezier curve, false if not (in formation)
     bool attacking;
     std::vector<CMPUT350::Shape> shapes;
+    bool died;
+    bool killedPlayer;
 };
 
 

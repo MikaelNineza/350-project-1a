@@ -31,6 +31,8 @@ public:
     const CMPUT350::Rect& GetBounds() override;
     CMPUT350::Point2D GetLocation() const override;
     float GetRotation() const override;
+    int GetLives() const;
+    void TakeDamage();
 
 private: 
     CMPUT350::Point2D loc;
@@ -40,6 +42,8 @@ private:
     bool requestFire;
     bool requestLeft;
     bool requestRight;
+    int lives;
+    bool died;
 };
 
 #endif

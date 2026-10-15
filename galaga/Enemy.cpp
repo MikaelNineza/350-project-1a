@@ -2,14 +2,7 @@
 #include "Bullet.h"
 #include "Player.h"
 
-#define ENEMY_WIDTH 40.f
-#define ENEMY_HEIGHT 40.f
-#define PIXELS_PER_FRAME 6.f
-#define SWAY_DIST 10.f
-#define SWAY_SPEED 0.05f
-#define FIRE_NTH_FRAME 60
-
-Enemy::Enemy(CMPUT350::Point2D formationLoc, const std::vector<CMPUT350::Point2D> &path) : formationLoc(formationLoc), path(path), t(0.f), isAlive(true), curve(path), onPath(true), attacking(false)
+Enemy::Enemy(CMPUT350::Point2D formationLoc, const std::vector<CMPUT350::Point2D> &path) : formationLoc(formationLoc), path(path), t(0.f), isAlive(true), curve(path), onPath(true), attacking(false), died(false), killedPlayer(false)
 {
     loc = path[0];
     CMPUT350::Rect local(CMPUT350::Point2D(-ENEMY_WIDTH / 2.f, -ENEMY_HEIGHT / 2.f), ENEMY_WIDTH, ENEMY_HEIGHT);
@@ -34,9 +27,13 @@ bool Enemy::BeginAttack(const std::vector<CMPUT350::Point2D>& attackPath) {
 
 void Enemy::Update(CMPUT350::GameContext* context)
 {
-    if (!isAlive) {
+    if (died) {
+        isAlive = false;
+        if (killedPlayer) {
+            return;
+        }
         if (onPath) {
-            context->mNotificationManger->Notify("EnemyDiedWhileMoving");
+            context->mNotificationManager->Notify("EnemyDiedWhileMoving");
         }
         else {
             context->mNotificationManager->Notify("EnemyDied");
@@ -101,13 +98,14 @@ void Enemy::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj
         }
     }
     if (player != nullptr) {
+        killedPlayer = true;
         Kill();
     }
 }
 
 void Enemy::Kill()
 {
-    isAlive = false;
+    died = true;
 }
 
 bool Enemy::IsAlive() const
@@ -145,4 +143,8 @@ bool Enemy::InFormation() const {
 
 void Enemy::SetHealth(int newHealth) {
     health = newHealth;
+}
+
+int Enemy::GetHealth() const {
+    return health;
 }

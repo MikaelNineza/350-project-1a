@@ -1,12 +1,9 @@
 #include "Galaga.h"
 #include "Player.h"
 #include "Enemy.h"
-
-#define POINTS 10
-#define NUM_ENEMIES 8
-#define STARTUP_WAIT_FRAMES 120 // wait 2 seconds until start
-#define WAVES_SPAWN_INTERVAL 15 // one enemy every 0.25 seconds
-#define GAMEOVER_WAIT_FRAMES 300 // wait 5 seconds until back to menu
+#include "Bullet.h"
+#include "Enemy2.h"
+#include "Stars.h"
 
 Galaga::Galaga(int width, int height) :
     state(State::InsertCoins),
@@ -35,6 +32,8 @@ void Galaga::Initialize(CMPUT350::GameContext *context) {
 
     context->mNotificationManager->Register(context->CurrObject, "EnemyDied");
     context->mNotificationManager->Register(context->CurrObject, "EnemyDiedWhileMoving");
+    context->mNotificationManager->Register(context->CurrObject, "PlayerDied");
+    context->mEngineView->AddGameObject(std::make_shared<Stars>(250, CMPUT350::Rect(0, 0, context->ScreenContext->GetWindowWidth(), context->ScreenContext->GetWindowHeight())));
 }
 
 void Galaga::Update(CMPUT350::GameContext* context) {
@@ -56,22 +55,41 @@ void Galaga::Update(CMPUT350::GameContext* context) {
         case State::Startup:
             context->mNotificationManager->Unregister(context->CurrObject, "StartGame");
             if (mPlayer.expired()) {
-                std::shared_ptr<Player> player = std::make_shared<Player>(CMPUT350::Point2D(768 / 2, 900));
+                std::shared_ptr<Player> player = std::make_shared<Player>(CMPUT350::Point2D(context->ScreenContext->GetWindowWidth() / 2, 900));
                 context->mEngineView->AddGameObject(player);
                 mPlayer = player;
             }
-            spawnEnemies = 8;
+            spawnEnemy = 0;
+            spawnWaves = NUM_WAVES;
             if (elapsed >= STARTUP_WAIT_FRAMES) {
                 state = State::Waves;
             }
             break;
         case State::Waves:
             // add an enemy object to the screen every k-th frame:
-            if (spawnEnemies > 0) {
-                if (elapsed % WAVES_SPAWN_INTERVAL == 0) {
-                    spawnEnemies--;
-                    //std::shared_ptr<Enemy> enemy = std::make_shared<Enemy>(CMPUT350::Point2D(0.f, 0.f));
-                    //context->mEngineView->AddGameObject(enemy);
+            if (spawnEnemy > 0) {
+                if (elapsed % ENEMY_SPAWN_INTERVAL != 0) {
+                    return;
+                }
+                SpawnEnemy(context);
+                spawnEnemy--;
+            }
+            // move to next wave of enemies
+            else if (spawnWaves > 0) {
+                bool readyNextWave = true;
+                bool enemyInit = false;
+                for (const auto& obj : *context->mEngineView) {
+                    if (auto enemy = std::dynamic_pointer_cast<Enemy>(obj)) {
+                        enemyInit = true;
+                        if (!enemy->InFormation()) {
+                            readyNextWave = false;
+                            break;
+                        }
+                    }
+                }
+                if (readyNextWave || !enemyInit) {
+                    spawnWaves--;
+                    spawnEnemy = NUM_ENEMIES;
                 }
             }
             // check to see if all enemies have been added, if so start game
@@ -91,25 +109,52 @@ void Galaga::Update(CMPUT350::GameContext* context) {
             }
             break;
         case State::Gameplay: {
-            // call Attack on subset of enemies deterministically
-            //
+            auto player = mPlayer.lock();
+            if (player != nullptr) {
+                if (!player->IsAlive()) {
+                    state = State::GameOver;
+                    return;
+                }
+                else {
+                    // call attack on subset of enemies
+                    for (const auto& obj : *context->mEngineView) {
+                        auto enemy = std::dynamic_pointer_cast<Enemy>(obj);
+                        if (enemy != nullptr && enemy->IsAlive()) {
+                            enemy->Attack(context, player->GetLocation());
+                        }
+                    }
+                }
+            }
             // check to see if there are no enemies remaining
             bool allEnemiesDead = true;
             for (const auto& obj : *context->mEngineView) {
                 auto enemy = std::dynamic_pointer_cast<Enemy>(obj);
-                if (enemy && enemy->IsAlive()) {
+                if (enemy != nullptr && enemy->IsAlive()) {
                     allEnemiesDead = false;
                     break;
                 }
             }
             if (allEnemiesDead) {
                 level++;
-                spawnEnemies = NUM_ENEMIES;
                 state = State::Startup;
             }
             break;
         }
         case State::GameOver:
+            for (const auto& obj : *context->mEngineView) {
+                auto player = std::dynamic_pointer_cast<Player>(obj);
+                auto enemy = std::dynamic_pointer_cast<Enemy>(obj);
+                auto bullet = std::dynamic_pointer_cast<Bullet>(obj);
+                if (player != nullptr) {
+                    player->Kill();
+                }
+                if (enemy != nullptr) {
+                    enemy->Kill();
+                }
+                if (bullet != nullptr) {
+                    bullet->Kill();
+                }
+            }
             if (elapsed >= GAMEOVER_WAIT_FRAMES) {
                 points = 0;
                 level = 1;
@@ -121,20 +166,26 @@ void Galaga::Update(CMPUT350::GameContext* context) {
 
 void Galaga::RenderUI(CMPUT350::GameContext *context) {
     if (state == State::InsertCoins) {
-        // draw text to tell user to insert coins (press 5)
+        context->GUIContext->DrawCenteredText("GALAGA", 32, CMPUT350::Point2D(width / 2.f, height / 2.f), WHITE);
+        context->GUIContext->DrawCenteredText("INSERT COINS (PRESS 5)", 24, CMPUT350::Point2D(width / 2.f, height * 0.75f), YELLOW);
     }
     else if (state == State::StartGame) {
-        // draw text to tell user to start game (press 1)
+        context->GUIContext->DrawCenteredText("GALAGA", 32, CMPUT350::Point2D(width / 2.f, height / 2.f), WHITE);
+        context->GUIContext->DrawCenteredText("START GAME (PRESS 1)", 24, CMPUT350::Point2D(width / 2.f, height * 0.75f), GREEN);
     }
     else if (state >= State::Startup) {
         if (state == State::Startup) {
-            // display the current level on the screen
+            context->GUIContext->DrawCenteredText(std::format("LEVEL {}", level), 16, CMPUT350::Point2D(width / 2.f, height / 2.f), WHITE);
         }
         else if (state == State::GameOver) {
-            // draw text to tell user that game is over
+            context->GUIContext->DrawCenteredText("GAME OVER", 32, CMPUT350::Point2D(width / 2.f, height / 2.f), RED);
             return;
         }
-        // show the score on the top left
+        context->GUIContext->DrawText(std::format("SCORE: {}", points), 16, CMPUT350::Point2D(0.f, 4.f), WHITE);
+        auto player = mPlayer.lock();
+        if (player != nullptr) {
+            context->GUIContext->DrawText(std::format("LIVES: {}", player->GetLives()), 16, CMPUT350::Point2D(0.f, context->GUIContext->GetWindowHeight() - 20), WHITE);
+        }
     }
 }
 
@@ -145,6 +196,9 @@ void Galaga::ReceiveNotification(const std::string &key) {
     else if (key == "StartGame") {
         state = State::Startup;
     }
+    else if (key == "PlayerDied") {
+        state = State::GameOver;
+    }
     else if (key == "EnemyDied") {
         points += POINTS;
     }
@@ -152,3 +206,30 @@ void Galaga::ReceiveNotification(const std::string &key) {
         points += 2 * POINTS;
     }
 }
+
+void Galaga::SpawnEnemy(CMPUT350::GameContext* context) {
+    auto width = context->GUIContext->GetWindowWidth();
+    auto height = context->GUIContext->GetWindowHeight();
+    float margin = 50.f;
+    float rowGap = 40.f;
+    float topY = 50.f;
+
+    float spacing = (width - 2 * margin) / (NUM_ENEMIES - 1);
+    float x = margin + (spawnEnemy - 1) * spacing;
+    float y = topY + (NUM_WAVES - spawnWaves - 1) * rowGap;
+
+    CMPUT350::Point2D formation(x, y);
+
+    std::vector<CMPUT350::Point2D> sample = {
+        CMPUT350::Point2D(-50.f, 300.f),
+        CMPUT350::Point2D(200.f, 300.f),
+        CMPUT350::Point2D(500.f, 100.f),
+        CMPUT350::Point2D(500.f, 400.f),
+        CMPUT350::Point2D(500.f, 600.f),
+        CMPUT350::Point2D(384.f, 400.f),
+        formation
+    };
+    std::shared_ptr<Enemy2> enemy = std::make_shared<Enemy2>(formation, sample);
+    context->mEngineView->AddGameObject(enemy);
+}
+
