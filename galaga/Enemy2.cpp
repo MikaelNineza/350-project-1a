@@ -10,6 +10,7 @@ void Enemy2::LateUpdate(CMPUT350::GameContext *context) {
 
 bool Enemy2::Attack(CMPUT350::GameContext *context, const CMPUT350::Point2D &target) {
     // fire a bullet, in the direction of the player or just straight (?)
+    return false;
 }
 
 void Enemy2::RenderForeground(CMPUT350::GameContext *context) {

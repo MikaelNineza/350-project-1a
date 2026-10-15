@@ -1,4 +1,5 @@
 #include "GameEngine.h"
+#include "GameContext.h"
 #include "Player.h"
 #include "Galaga.h"
 
@@ -38,7 +39,7 @@ public:
 		return mBounds;
 	}
 	
-	bool IsStatic() const override { return false; }
+	bool IsStatic() const { return false; }
 	
 	const std::vector<CMPUT350::Shape> &GetShapes() override
 	{
@@ -115,7 +116,7 @@ public:
 		return mBounds;
 	}
 	
-	bool IsStatic() const override { return false; }
+	bool IsStatic() const { return false; }
 	
 	const std::vector<CMPUT350::Shape> &GetShapes() override
 	{
@@ -196,7 +197,7 @@ public:
 		return mBounds;
 	}
 	
-	bool IsStatic() const override { return false; }
+	bool IsStatic() const { return false; }
 	
 	const std::vector<CMPUT350::Shape> &GetShapes() override
 	{
@@ -275,11 +276,11 @@ int main()
 		
 		engine.Run();
 	}
-	else {
-		CMPUT350::GameEngine engine(768, 1024, "Galaga");
-		auto game = std::make_shared<Galaga>(768, 1024);
-		engine.AddGameObject(game);
-		engine.Run();
-	}
+	// else {
+	// 	CMPUT350::GameEngine engine(768, 1024, "Galaga");
+	// 	auto game = std::make_shared<Galaga>(768, 1024);
+	// 	engine.AddGameObject(game);
+	// 	engine.Run();
+	// }
     return 0;
 }
