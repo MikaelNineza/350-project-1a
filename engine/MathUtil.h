@@ -4,7 +4,6 @@
 #include <cmath>
 #include <algorithm>
 #include <iostream>
-#include <CollisionObject.h>
 
 namespace CMPUT350 {
 
@@ -335,86 +334,6 @@ static std::ostream &operator<<(std::ostream &os, const Line &l) {
     return os;
 }
 
-struct Rect;
-/**
- * @brief A circle defined by a center and radius.
- */
-struct Circle {
-    Point2D center;
-    float radius;
-
-    /**
-     * @brief Constructs a circle from a center point and radius.
-     * @param c Center (default origin).
-     * @param r Radius (default 0).
-     */
-    Circle(Point2D c = {0, 0}, float r = 0) : center(c), radius(r) {}
-
-    /**
-     * @brief Constructs a circle from raw coordinates and radius.
-     * @param x Center x.
-     * @param y Center y.
-     * @param r Radius.
-     */
-    Circle(float x, float y, float r) : center(x, y), radius(r) {}
-
-    bool Intersects(const Circle &other) const {
-        Point2D d = center - other.center;
-        return Point2D::Dot(d, d) <= std::pow(radius + other.radius, 2);
-    }
-
-    bool Intersects(const Line &other, Point2D &collisionPoint) const {
-
-
-        Point2D closest = other.ClosestPoint(center);
-        Point2D d = center - closest;
-        bool intersects =  Point2D::Dot(d, d) <= radius * radius;
-
-        if (intersects) {
-            Point2D a = other.p1;
-            Point2D ab = other.p2 - a;
-
-            Point2D ap = a - center;
-
-            float len2 = Point2D::Dot(ab, ab);
-
-            if (len2 == 0.f || Point2D::Dot(ap, ap) <= radius * radius) {
-                collisionPoint = a;
-            }
-            else {
-                float t = Point2D::Dot(center - a, ab) / len2;
-                Point2D x(a.x + t * ab.x, a.y + t * ab.y);
-
-                Point2D xp = center - x;
-                float d = std::sqrt(std::max(0.f, radius * radius - Point2D::Dot(xp, xp)));
-                float len = std::sqrt(len2);
-                collisionPoint = Point2D(x.x - ((d * ab.x) / len), x.y - ((d * ab.y) / len));
-            }
-        }
-
-        return intersects;
-    }
-
-    bool Intersects(const Rect &other) const {
-        if (other.IsInside(center)) {
-            return true;
-        }
-
-        float left = other.topLeft.x;
-        float top = other.topLeft.y;
-        float right = left + other.width;
-        float bottom = top + other.height;
-
-        Point2D temp;
-        return Intersects(Line(left, top, right, top), temp) || Intersects(Line(right, top, right, bottom), temp) ||
-            Intersects(Line(right, bottom, left, bottom), temp) || Intersects(Line(left, bottom, left, top), temp);
-    }
-};
-
-static std::ostream &operator<<(std::ostream &os, const Circle &c) {
-    os << "Center: " << c.center << " Radius: " << c.radius;
-}
-
 /**
  * @brief An axis-aligned rectangle stored as a top-left corner plus size.
  *
@@ -610,7 +529,13 @@ struct Rect {
     }
 
     bool Intersects(const Line &l, Point2D &collisionPoint) const {
-        if (IsInside(l.p1) || IsInside(l.p2)) {
+        if (IsInside(l.p1)) {
+            collisionPoint = l.p1;
+            return true;
+        }
+
+        if (IsInside(l.p2)) {
+            collisionPoint = l.p2;
             return true;
         }
 
@@ -641,10 +566,90 @@ struct Rect {
             }
         }
 
-        return true;
+        return intersects;
 
     }
 };
+
+/**
+ * @brief A circle defined by a center and radius.
+ */
+struct Circle {
+    Point2D center;
+    float radius;
+
+    /**
+     * @brief Constructs a circle from a center point and radius.
+     * @param c Center (default origin).
+     * @param r Radius (default 0).
+     */
+    Circle(Point2D c = {0, 0}, float r = 0) : center(c), radius(r) {}
+
+    /**
+     * @brief Constructs a circle from raw coordinates and radius.
+     * @param x Center x.
+     * @param y Center y.
+     * @param r Radius.
+     */
+    Circle(float x, float y, float r) : center(x, y), radius(r) {}
+
+    bool Intersects(const Circle &other) const {
+        Point2D d = center - other.center;
+        return Point2D::Dot(d, d) <= std::pow(radius + other.radius, 2);
+    }
+
+    bool Intersects(const Line &other, Point2D &collisionPoint) const {
+
+
+        Point2D closest = other.ClosestPoint(center);
+        Point2D d = center - closest;
+        bool intersects =  Point2D::Dot(d, d) <= radius * radius;
+
+        if (intersects) {
+            Point2D a = other.p1;
+            Point2D ab = other.p2 - a;
+
+            Point2D ap = a - center;
+
+            float len2 = Point2D::Dot(ab, ab);
+
+            if (len2 == 0.f || Point2D::Dot(ap, ap) <= radius * radius) {
+                collisionPoint = a;
+            }
+            else {
+                float t = Point2D::Dot(center - a, ab) / len2;
+                Point2D x(a.x + t * ab.x, a.y + t * ab.y);
+
+                Point2D xp = center - x;
+                float d = std::sqrt(std::max(0.f, radius * radius - Point2D::Dot(xp, xp)));
+                float len = std::sqrt(len2);
+                collisionPoint = Point2D(x.x - ((d * ab.x) / len), x.y - ((d * ab.y) / len));
+            }
+        }
+
+        return intersects;
+    }
+
+    bool Intersects(const Rect &other) const {
+        if (other.IsInside(center)) {
+            return true;
+        }
+
+        float left = other.topLeft.x;
+        float top = other.topLeft.y;
+        float right = left + other.width;
+        float bottom = top + other.height;
+
+        Point2D temp;
+        return Intersects(Line(left, top, right, top), temp) || Intersects(Line(right, top, right, bottom), temp) ||
+            Intersects(Line(right, bottom, left, bottom), temp) || Intersects(Line(left, bottom, left, top), temp);
+    }
+};
+
+static std::ostream &operator<<(std::ostream &os, const Circle &c) {
+    os << "Center: " << c.center << " Radius: " << c.radius;
+    return os;
+}
 
 /**
  * @brief Writes a rectangle to a stream in the form
@@ -657,52 +662,6 @@ static std::ostream &operator<<(std::ostream &os, const Rect &l) {
     os << "Top left: " << l.topLeft << ", Width: " << l.width << ", Height: " << l.height;
     return os;
 }
-
-bool LineCollision(const Line &l, const Shape &other, Point2D &collisionPoint) {
-    if (other.t == ShapeType::kCircle) {
-        return other.shape.circle.Intersects(l, collisionPoint);
-    }
-    if (other.t == ShapeType::kLine) {
-        return l.Crosses(other.shape.line, collisionPoint);
-    }
-    if (other.t == ShapeType::kRect) {
-        return other.shape.rect.Intersects(l, collisionPoint);
-    }
-}
-
-bool CollisionMade(const Shape &first, const Shape &second, Point2D &collisionPoint, int &objectLine) {
-    if (first.t == ShapeType::kLine) {
-        objectLine = 1;
-        return false;
-    }
-
-    if (second.t == ShapeType::kLine) {
-        objectLine = 2;
-        return false;
-    }
-
-    objectLine = -1;
-
-    if (first.t == ShapeType::kCircle) {
-        if (second.t == ShapeType::kCircle) {
-            return first.shape.circle.Intersects(second.shape.circle);
-        }
-        else if (second.t == ShapeType::kRect) {
-            return first.shape.circle.Intersects(second.shape.rect);
-        }
-    }
-
-    if (first.t == ShapeType::kRect) {
-        if (second.t == ShapeType::kCircle) {
-            return second.shape.circle.Intersects(first.shape.rect);
-        }
-        else if (second.t == ShapeType::kRect) {
-            Rect overlap = first.shape.rect & second.shape.rect;
-            return overlap.width > 0 && overlap.height > 0;
-        }
-    }
-
-};
 
 }  // namespace CMPUT350
 
