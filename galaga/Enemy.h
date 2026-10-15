@@ -34,6 +34,7 @@ public:
     bool BeginAttack(const std::vector<CMPUT350::Point2D>& attackPath);
 
     bool InFormation() const;
+    void SetHealth(int newHealth);
 
 private:
     CMPUT350::Point2D loc;

@@ -1,3 +1,5 @@
+#if 0
+
 #include <random>
 #include "GameEngine.h"
 #include "Player.h"
@@ -137,3 +139,5 @@ int main()
     }
     return 0;
 }
+
+#endif

@@ -106,5 +106,9 @@ CMPUT350::Point2D Bullet::GetLocation() const {
 }
 
 float Bullet::GetRotation() const {
-    return std::atan2f(heading.y, heading.x);
+    return std::atan2(heading.y, heading.x);
+}
+
+void Bullet::ReceiveNotification(const std::string& key) {
+
 }

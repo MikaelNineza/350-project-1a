@@ -136,9 +136,13 @@ float Enemy::GetRotation() const {
         return 0.f;
     }
     auto heading = curve.GetSlope(t);
-    return std::atan2f(heading.y, heading.x);
+    return std::atan2(heading.y, heading.x);
 }
 
 bool Enemy::InFormation() const {
     return !onPath;
+}
+
+void Enemy::SetHealth(int newHealth) {
+    health = newHealth;
 }
