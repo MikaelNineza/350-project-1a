@@ -59,6 +59,190 @@ void GameEngine::AddGameObject(std::shared_ptr<GameObject> gameObject) {
     mNewObjects.push_back(std::move(gameObject));
 }
 
+void GameEngine::HandleCollisions(DrawContext &drawContext) {
+    // For each collision object, save their world bounds for later.
+    std::vector<std::shared_ptr<CollisionObject>> colObjects;
+    std::vector<Rect> worldBounds;
+    for (auto& obj : mGameObjects) {
+        auto colObj = std::dynamic_pointer_cast<CollisionObject>(obj);
+        if (!colObj) {
+            continue;
+        }
+
+        drawContext.SetContextOffset(colObj->GetLocation());
+        drawContext.SetContextRotation(colObj->GetRotation());
+        colObjects.push_back(colObj);
+        worldBounds.push_back(drawContext.Transform(colObj->GetBounds()));
+    }
+
+    int objCount = colObjects.size();
+    for (int i = 0; i < objCount; ++i) {
+        for (int j = i + 1; j < objCount; ++j) {
+            
+            Rect bb1 = worldBounds[i];
+            Rect bb2 = worldBounds[j];
+            
+            if (bb1.topLeft.x > bb2.topLeft.x + bb2.width ||
+                bb2.topLeft.x > bb1.topLeft.x + bb1.width ||
+                bb1.topLeft.y > bb2.topLeft.y + bb2.height ||
+                bb2.topLeft.y > bb1.topLeft.y + bb1.height) {
+                continue;
+            }
+            
+            std::shared_ptr<CollisionObject> objs[2] = {colObjects[i], colObjects[j]};
+            std::vector<Shape> wordlShapes[2];
+            bool collisionHappened = false;
+            bool hitLine[2] = {false, false};
+            Point2D collisionPoint[2];
+
+            for (int k = 0; k < 2; ++k) {
+                drawContext.SetContextOffset(objs[k]->GetLocation());
+                drawContext.SetContextRotation(objs[k]->GetRotation());
+
+                for (const Shape &s : objs[k]->GetShapes()) {
+                    if (s.t == ShapeType::kCircle) {
+                        Circle circle(drawContext.Transform(s.shape.circle.center), s.shape.circle.radius);
+                        wordlShapes[k].push_back(Shape(circle));
+                    } else if (s.t == ShapeType::kLine) {
+                        Line line(drawContext.Transform(s.shape.line.p1), drawContext.Transform(s.shape.line.p2));
+                        wordlShapes[k].push_back(Shape(line));
+                    } else {
+                        // Rect isn't transformed so that if it's rotated, it doesn't turn into its bounding box
+                        wordlShapes[k].push_back(s);
+                    }
+                }
+            }
+
+            for (int x = 0; x < wordlShapes[0].size(); ++x) {
+                for (int y = 0; y < wordlShapes[1].size(); ++y) {
+                    Shape &shape1 = wordlShapes[0][x];
+                    Shape &shape2 = wordlShapes[1][y];
+                    Point2D hitInWorld;
+                    bool perLoopCollided = false;
+
+                   if (shape1.t == ShapeType::kCircle) {
+                        if (shape2.t == ShapeType::kCircle) {
+                            perLoopCollided = shape1.shape.circle.Intersects(shape2.shape.circle);
+                        } else if (shape2.t == ShapeType::kLine) {
+                            perLoopCollided = shape1.shape.circle.Intersects(shape2.shape.line, hitInWorld);
+                            hitLine[1] = true;
+                        } else if (shape2.t == ShapeType::kRect) {
+                            drawContext.SetContextOffset(objs[1]->GetLocation());
+                            drawContext.SetContextRotation(objs[1]->GetRotation());
+                            Circle circle(drawContext.ReverseTransform(shape1.shape.circle.center), shape1.shape.circle.radius);
+                            perLoopCollided = circle.Intersects(shape2.shape.rect);
+                        }
+                   } else if (shape1.t == ShapeType::kLine) {
+                        if (shape2.t == ShapeType::kCircle) {
+                            perLoopCollided = shape2.shape.circle.Intersects(shape1.shape.line, hitInWorld);
+                            hitLine[0] = true;
+                        } else if (shape2.t == ShapeType::kLine) {
+                            perLoopCollided = shape1.shape.line.Crosses(shape2.shape.line, hitInWorld);
+                            hitLine[0] = true;
+                            hitLine[1] = true;
+                        } else if (shape2.t == ShapeType::kRect) {
+                            drawContext.SetContextOffset(objs[1]->GetLocation());
+                            drawContext.SetContextRotation(objs[1]->GetRotation());
+                            Line line(drawContext.ReverseTransform(shape1.shape.line.p1), drawContext.ReverseTransform(shape1.shape.line.p2));
+                            perLoopCollided = shape2.shape.rect.Intersects(line, hitInWorld);
+                            if (perLoopCollided) {
+                                hitInWorld = drawContext.Transform(hitInWorld);
+                                hitLine[0] = true;
+                            }
+                        }
+                    } else if (shape1.t == ShapeType::kRect) {
+                        if (shape2.t == ShapeType::kCircle) {
+                            drawContext.SetContextOffset(objs[0]->GetLocation());
+                            drawContext.SetContextRotation(objs[0]->GetRotation());
+                            Circle circle(drawContext.ReverseTransform(shape2.shape.circle.center), shape2.shape.circle.radius);
+                            perLoopCollided = circle.Intersects(shape1.shape.rect);
+                        } else if (shape2.t == ShapeType::kLine) {
+                            drawContext.SetContextOffset(objs[0]->GetLocation());
+                            drawContext.SetContextRotation(objs[0]->GetRotation());
+                            Line line(drawContext.ReverseTransform(shape2.shape.line.p1), drawContext.ReverseTransform(shape2.shape.line.p2));
+                            perLoopCollided = shape1.shape.rect.Intersects(line, hitInWorld);
+                            if (perLoopCollided) {
+                                hitInWorld = drawContext.Transform(hitInWorld);
+                                hitLine[1] = true;
+                            }
+                        } else if (shape2.t == ShapeType::kRect) {
+                            /*
+                                THIS IS AI GENERATED CODE.
+                                Prompt: How do I complete the else if (shape2.t == ShapeType::kRect) where
+                                I compare to see if two rectangle collide the same I have done when a rectangle
+                                collides with another shape type.
+                                Reflection: The code succesfully impleted the Rect vs Rect collisions.
+                            */
+                            
+
+                            // Rect vs rect. Work in object 1's local space, where its rect isn't rotated.
+                            Rect rect1 = shape1.shape.rect;
+                            Rect rect2 = shape2.shape.rect;
+
+                            Point2D corners2[4] = {
+                                rect2.topLeft,
+                                Point2D(rect2.topLeft.x + rect2.width, rect2.topLeft.y),
+                                Point2D(rect2.topLeft.x + rect2.width, rect2.topLeft.y + rect2.height),
+                                Point2D(rect2.topLeft.x, rect2.topLeft.y + rect2.height)
+                            };
+
+                            // Object 2's corners: its local space -> world -> object 1's local space
+                            drawContext.SetContextOffset(objs[1]->GetLocation());
+                            drawContext.SetContextRotation(objs[1]->GetRotation());
+                            for (int m = 0; m < 4; ++m) {
+                                corners2[m] = drawContext.Transform(corners2[m]);
+                            }
+                            drawContext.SetContextOffset(objs[0]->GetLocation());
+                            drawContext.SetContextRotation(objs[0]->GetRotation());
+                            for (int m = 0; m < 4; ++m) {
+                                corners2[m] = drawContext.ReverseTransform(corners2[m]);
+                            }
+
+                            // Does any edge of object 2's rect touch object 1's rect?
+                            for (int m = 0; m < 4 && !perLoopCollided; ++m) {
+                                Point2D unused;
+                                perLoopCollided = rect1.Intersects(Line(corners2[m], corners2[(m + 1) % 4]), unused);
+                            }
+
+                            /*END OF AI GENERATED CODE*/
+                        }
+                    }
+                    
+
+
+                    if (perLoopCollided) {
+                        collisionHappened = true;
+                        if (hitLine[0]) {
+                            drawContext.SetContextOffset(objs[0]->GetLocation());
+                            drawContext.SetContextRotation(objs[0]->GetRotation());
+                            collisionPoint[0] = drawContext.ReverseTransform(hitInWorld);
+                        }
+
+                        if (hitLine[1]) {
+                            drawContext.SetContextOffset(objs[1]->GetLocation());
+                            drawContext.SetContextRotation(objs[1]->GetRotation());
+                            collisionPoint[1] = drawContext.ReverseTransform(hitInWorld);
+                        }
+                    }
+                }
+            }
+
+            if (collisionHappened) {
+                for (int k = 0; k < 2; ++k) {
+                    int otherIdx = k ? 0 : 1;
+                    if (hitLine[k]) {
+                        objs[k]->CollisionEnter(objs[otherIdx], collisionPoint[k]);
+                    } else {
+                        objs[k]->CollisionEnter(objs[otherIdx]);
+                    }
+                }
+            }
+
+        }
+    }
+
+}
+
 /**
  * @brief Runs the main game loop until the window is closed.
  *
@@ -111,29 +295,7 @@ void GameEngine::Run() {
         }
 
         // 4. Process collision events
-        int objCount = mGameObjects.size();
-        for (int i = 0; i < objCount; ++i) {
-            auto firstObj = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[i]);
-            if (!firstObj) {
-                continue;
-            }
-
-            for (int j = i + 1; j < objCount; ++j) {
-                auto secondObj = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
-                if (!secondObj) {
-                    continue;
-                }
-
-                Rect overlap = firstObj->GetBounds();
-                overlap &= secondObj->GetBounds();
-
-                if (overlap.width > 0 && overlap.height > 0) {
-                    firstObj->CollisionEnter(secondObj);
-                    secondObj->CollisionEnter(firstObj);
-                }
-
-            }
-        }
+        HandleCollisions(drawContext);
 
         // 5. Late updates
         for(auto& obj : mGameObjects) {
@@ -167,6 +329,18 @@ void GameEngine::Run() {
         for(auto& obj : mGameObjects) {
             context.CurrObject = obj;
             obj->RenderUI(&context);
+        }
+
+        const bool drawBB = true;
+        if (drawBB) {
+            for (auto& obj : mGameObjects) {
+                if (auto graphic = std::dynamic_pointer_cast<CollisionObject>(obj)) {
+                    drawContext.SetContextOffset(graphic->GetLocation());
+                    drawContext.SetContextRotation(graphic->GetRotation());
+                    Rect box = drawContext.Transform(graphic->GetBounds());
+                    guiContext.FrameRect(box, 1.0f, Colors::yellow);
+                }
+            }
         }
 
         // Actually render to window
