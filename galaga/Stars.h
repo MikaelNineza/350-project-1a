@@ -2,6 +2,7 @@
 #define STARS_H
 
 #include "GraphicsObject.h"
+#include "MathUtil.h"
 #include <random>
 
 class Stars : public CMPUT350::GraphicsObject
@@ -9,6 +10,9 @@ class Stars : public CMPUT350::GraphicsObject
 public:
     Stars(int numStars, CMPUT350::Rect bounds);
     void RenderBackground(CMPUT350::GameContext* context) override;
+    CMPUT350::Point2D GetLocation() const override;
+    float GetRotation() const override;
+
 
 private:
     std::vector<CMPUT350::Point2D> mStarPositions;

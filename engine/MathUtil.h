@@ -297,7 +297,7 @@ struct Line {
      *         intersect, or if they are parallel (including collinear and
      *         overlapping segments).
      */
-    bool Crosses(Line other, Point2D &crossingPoint) const {
+    bool Crosses(const Line &other, Point2D &crossingPoint) const {
         Point2D Q = p1;
         Point2D Q_vec = p2 - p1;
 
@@ -333,29 +333,6 @@ static std::ostream &operator<<(std::ostream &os, const Line &l) {
     os << "Start: " << l.p1 << " End: " << l.p2;
     return os;
 }
-
-/**
- * @brief A circle defined by a center and radius.
- */
-struct Circle {
-    Point2D center;
-    float radius;
-
-    /**
-     * @brief Constructs a circle from a center point and radius.
-     * @param c Center (default origin).
-     * @param r Radius (default 0).
-     */
-    Circle(Point2D c = {0, 0}, float r = 0) : center(c), radius(r) {}
-
-    /**
-     * @brief Constructs a circle from raw coordinates and radius.
-     * @param x Center x.
-     * @param y Center y.
-     * @param r Radius.
-     */
-    Circle(float x, float y, float r) : center(x, y), radius(r) {}
-};
 
 /**
  * @brief An axis-aligned rectangle stored as a top-left corner plus size.
@@ -488,6 +465,20 @@ struct Rect {
     }
 
     /**
+     * @brief Returns the intersection of this rectangle with another.
+     *
+     * Non-mutating version of operator&=; this rectangle is unchanged.
+     *
+     * @param other The rectangle to intersect with.
+     * @return The overlapping area, with width and height 0 if there is none.
+     */
+    Rect operator&(const Rect &other) const {
+        Rect temp = *this;
+        temp &= other;
+        return temp;
+    }
+
+    /**
      * @brief Translates this rectangle in place.
      * @param other Offset added to the top-left corner; size is unchanged.
      * @return Reference to this rectangle.
@@ -543,7 +534,160 @@ struct Rect {
 
         return x1 <= p.x && p.x <= x2 && y1 <= p.y && p.y <= y2;
     }
+
+    /**
+     * @brief Tests whether a line segment touches the rectangle.
+     *
+     * @param l The segment to test.
+     * @param collisionPoint Output, set only when the function returns true: l.p1 if it is
+     *                       inside the rectangle, otherwise the point where l crosses an edge
+     *                       that is closest to l.p1.
+     * @return true if any part of the segment is inside or on the rectangle.
+     *
+     * @note A segment with p1 outside but p2 inside always crosses an edge, so it is detected.
+     */
+    bool Intersects(const Line &l, Point2D &collisionPoint) const {
+        if (IsInside(l.p1)) {
+            collisionPoint = l.p1;
+            return true;
+        }
+
+        float left = topLeft.x;
+        float top = topLeft.y;
+        float right = left + width;
+        float bottom = top + height;
+
+        Line sides[4] = {
+            Line(left, top, right, top),
+            Line(right, top, right, bottom),
+            Line(right, bottom, left, bottom),
+            Line(left, bottom, left, top)
+        };
+        
+        bool intersects = false;
+        double closest = 0;
+
+        for (const Line &side : sides) {
+            Point2D crosses;
+            if (l.Crosses(side, crosses)) {
+                double d = l.p1.Distance(crosses);
+                if (!intersects || d <  closest) {
+                    closest = d;
+                    collisionPoint = crosses;
+                    intersects = true;
+                }
+            }
+        }
+
+        return intersects;
+
+    }
 };
+
+/**
+ * @brief A circle defined by a center and radius.
+ */
+struct Circle {
+    Point2D center;
+    float radius;
+
+    /**
+     * @brief Constructs a circle from a center point and radius.
+     * @param c Center (default origin).
+     * @param r Radius (default 0).
+     */
+    Circle(Point2D c = {0, 0}, float r = 0) : center(c), radius(r) {}
+
+    /**
+     * @brief Constructs a circle from raw coordinates and radius.
+     * @param x Center x.
+     * @param y Center y.
+     * @param r Radius.
+     */
+    Circle(float x, float y, float r) : center(x, y), radius(r) {}
+
+    /**
+     * @brief Tests whether two circles overlap.
+     * @param other The other circle.
+     * @return true if the circles overlap or touch.
+     */
+    bool Intersects(const Circle &other) const {
+        Point2D d = center - other.center;
+        return Point2D::Dot(d, d) <= std::pow(radius + other.radius, 2);
+    }
+
+    /**
+     * @brief Tests whether a line segment touches the circle.
+     *
+     * @param other The segment to test.
+     * @param collisionPoint Output, set only when the function returns true: other.p1 if it is
+     *                       inside the circle, otherwise the first point where the segment,
+     *                       travelling from p1 to p2, enters the circle.
+     * @return true if the closest point on the segment is within the radius.
+     */
+    bool Intersects(const Line &other, Point2D &collisionPoint) const {
+
+        Point2D closest = other.ClosestPoint(center);
+        Point2D d = center - closest;
+        bool intersects =  Point2D::Dot(d, d) <= radius * radius;
+
+        if (intersects) {
+            Point2D a = other.p1;
+            Point2D ab = other.p2 - a;
+
+            Point2D ap = a - center;
+
+            float len2 = Point2D::Dot(ab, ab);
+
+            if (len2 == 0.f || Point2D::Dot(ap, ap) <= radius * radius) {
+                collisionPoint = a;
+            }
+            else {
+                float t = Point2D::Dot(center - a, ab) / len2;
+                Point2D x(a.x + t * ab.x, a.y + t * ab.y);
+
+                Point2D xp = center - x;
+                float d = std::sqrt(std::max(0.f, radius * radius - Point2D::Dot(xp, xp)));
+                float len = std::sqrt(len2);
+                collisionPoint = Point2D(x.x - ((d * ab.x) / len), x.y - ((d * ab.y) / len));
+            }
+        }
+
+        return intersects;
+    }
+
+    /**
+     * @brief Tests whether the circle overlaps an axis-aligned rectangle.
+     *
+     * @param other The rectangle.
+     * @return true if the center is inside the rectangle or the circle touches any of its edges.
+     */
+    bool Intersects(const Rect &other) const {
+        if (other.IsInside(center)) {
+            return true;
+        }
+
+        float left = other.topLeft.x;
+        float top = other.topLeft.y;
+        float right = left + other.width;
+        float bottom = top + other.height;
+
+        Point2D temp;
+        return Intersects(Line(left, top, right, top), temp) || Intersects(Line(right, top, right, bottom), temp) ||
+            Intersects(Line(right, bottom, left, bottom), temp) || Intersects(Line(left, bottom, left, top), temp);
+    }
+};
+
+/**
+ * @brief Writes a circle to a stream in the form "Center: (x, y) Radius: r".
+ * @param os Output stream.
+ * @param c  Circle to print.
+ * @return @p os, to allow chaining.
+ */
+static std::ostream &operator<<(std::ostream &os, const Circle &c) {
+    os << "Center: " << c.center << " Radius: " << c.radius;
+    return os;
+}
 
 /**
  * @brief Writes a rectangle to a stream in the form
