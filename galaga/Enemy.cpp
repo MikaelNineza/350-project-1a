@@ -82,7 +82,9 @@ void Enemy::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj
         }
     }
     if (player != nullptr) {
-        killedPlayer = true;
+        if (player->IsImmune()) {
+            return;
+        }
         Kill();
     }
 }

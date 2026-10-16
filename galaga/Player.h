@@ -34,6 +34,7 @@ public:
     float GetRotation() const override;
     int GetLives() const;
     void TakeDamage();
+    bool IsImmune();
 
 private: 
     CMPUT350::Point2D loc;
@@ -46,6 +47,7 @@ private:
     int lives;
     bool died;
     std::vector<CMPUT350::RGBColor> colors;
+    bool immune;
 };
 
 #endif

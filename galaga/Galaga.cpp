@@ -162,6 +162,19 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                     state = State::GameOver;
                     return;
                 }
+                else if (player->IsImmune()) {
+                    bool formation = true;
+                    for (const auto& obj : *context->mEngineView) {
+                        auto enemy = std::dynamic_pointer_cast<Enemy>(obj);
+                        if (enemy != nullptr && !enemy->InFormation()) {
+                            formation = false;
+                            break;
+                        }
+                    }
+                    if (formation) {
+                        context->mNotificationManager->Notify("ResetImmunity");
+                    }
+                }
                 else if (elapsed % ATTACK_WAIT_FRAMES == 0){
                     // call attack on subset of enemies
                     std::vector<Enemy*> enemies;
@@ -240,7 +253,9 @@ void Galaga::RenderUI(CMPUT350::GameContext *context) {
             context->GUIContext->DrawCenteredText(std::format("LEVEL {}", level), 16, CMPUT350::Point2D(width / 2.f, height / 2.f), WHITE);
         }
         else if (state == State::GameOver) {
-            context->GUIContext->DrawCenteredText("GAME OVER", 32, CMPUT350::Point2D(width / 2.f, height / 2.f), RED);
+            context->GUIContext->DrawCenteredText("GAME OVER", 32, CMPUT350::Point2D(width / 2.f, height / 3.f), RED);
+            context->GUIContext->DrawCenteredText(std::format("LEVEL REACHED: {}", level), 16, CMPUT350::Point2D(width / 2.f, height / 2.f), WHITE);
+            context->GUIContext->DrawCneteredText(std::format("FINAL SCORE: {}", points), 16, CMPUT350::Point2D(width / 2.f,  height * 0.6f), WHITE);
             return;
         }
         context->GUIContext->DrawText(std::format("SCORE: {}", points), 16, CMPUT350::Point2D(0.f, 4.f), WHITE);

@@ -44,8 +44,14 @@ void Bullet::RenderBackground(CMPUT350::GameContext *context) {
 
 void Bullet::RenderForeground(CMPUT350::GameContext* context)
 {
-    CMPUT350::Point2D d = heading * BULLET_SPEED;
-    context->ScreenContext->DrawLine(CMPUT350::Point2D(0.f, 0.f), d, BULLET_SIZE, CMPUT350::Colors::white);
+    if (isAlive) {
+        CMPUT350::Point2D d = heading * BULLET_SPEED;
+        auto colour = player ? CMPUT350::Colors::white : CMPUT350::Colors::yellow;
+        context->ScreenContext->DrawLine(CMPUT350::Point2D(0.f, 0.f), d, BULLET_SIZE, colour);
+    }
+    else {
+        context->ScreenContext->DrawCircle(CMPUT350::Point2D(0.f, 0.f), BULLET_SIZE, CMPUT350::Colors::yellow);
+    }
 }
 
 void Bullet::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject> &obj) {

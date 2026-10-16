@@ -6,7 +6,7 @@
 #define PLAYER_WIDTH 40.f
 #define PLAYER_HEIGHT 40.f
 
-Player::Player(CMPUT350::Point2D loc) : loc(loc), isAlive(true), requestFire(false), requestLeft(false), requestRight(false), lives(2), died(false)
+Player::Player(CMPUT350::Point2D loc) : loc(loc), isAlive(true), requestFire(false), requestLeft(false), requestRight(false), lives(3), died(false), immune(false)
 {
     /*
      * The design for the ship was AI generated using Claude.
@@ -64,6 +64,7 @@ void Player::Initialize(CMPUT350::GameContext* context)
     context->mNotificationManager->Register(context->CurrObject, "MoveRightHeld");
     context->mNotificationManager->Register(context->CurrObject, "MoveRightReleased");
     context->mNotificationManager->Register(context->CurrObject, "Fire");
+    context->mNotificationManager->Register(context->CurrObject, "ResetImmunity");
 }
 
 void Player::Update(CMPUT350::GameContext* context)
@@ -74,6 +75,10 @@ void Player::Update(CMPUT350::GameContext* context)
         return;
     }
 
+    // notify galaga that player is immune, so they can't take damage or attack
+    if (immune) {
+        context->mNotificationManager->Notify("PlayerImmune");
+    }
     // remove bullets that are no longer in the engine
     // engine responsible for dumping it after checking isAlive
     std::vector<std::weak_ptr<CMPUT350::CollisionObject>> aux;
@@ -87,6 +92,9 @@ void Player::Update(CMPUT350::GameContext* context)
 
     if (requestFire) {
         requestFire = false;
+        if (immune) {
+            return;
+        }
         if (bullets.size() < 2) {
             auto dir = CMPUT350::Point2D(0.0f, -1.0f); // bullet shoots straight up
             auto start_pos = loc;
@@ -97,6 +105,7 @@ void Player::Update(CMPUT350::GameContext* context)
         }
     }
 
+    // move either left or right not both at the same time
     if (requestLeft ^ requestRight) {
         if (requestLeft) {
             loc.x = std::max(PLAYER_WIDTH / 2.f, loc.x - MOVEMENT_SPEED);
@@ -130,6 +139,9 @@ void Player::ReceiveNotification(const std::string& key)
     else if (key == "Fire") {
         requestFire = true;
     }
+    else if (key == "ResetImmunity") {
+        immune = false;
+    }
 }
 
 void Player::RenderBackground(CMPUT350::GameContext* context)
@@ -139,13 +151,25 @@ void Player::RenderBackground(CMPUT350::GameContext* context)
 
 void Player::RenderForeground(CMPUT350::GameContext* context)
 {
-    for (int i = 0; i < shapes.size(); i++) {
-        context->ScreenContext->DrawRect(shapes[i].shape.rect, colors[i]);
+    if (immune) {
+        if ((context->currentFrame / 5) % 2 == 1) {
+            for (int i = 0; i < shapes.size(); i++) {
+                context->ScreenContext->DrawRect(shapes[i].shape.rect, colors[i]);
+            }
+        }
+    }
+    else {
+        for (int i = 0; i < shapes.size(); i++) {
+            context->ScreenContext->DrawRect(shapes[i].shape.rect, colors[i]);
+        }
     }
 }
 
 void Player::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)
 {
+    if (immune) {
+        return;
+    }
     std::shared_ptr<Bullet> bullet = std::dynamic_pointer_cast<Bullet>(obj);
     std::shared_ptr<Enemy> enemy = std::dynamic_pointer_cast<Enemy>(obj);
 
@@ -155,12 +179,14 @@ void Player::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& ob
         }
         TakeDamage();
     }
-    if (enemy != nullptr) {
+    if (enemy != nullptr && enemy->IsAlive()) {
         TakeDamage();
     }
     if (lives == 0) {
         Kill();
+        return;
     }
+    immune = true;
 }
 
 void Player::Kill()
@@ -199,4 +225,8 @@ int Player::GetLives() const {
 
 void Player::TakeDamage() {
     lives--;
+}
+
+bool Player::IsImmune() {
+    return immune;
 }
