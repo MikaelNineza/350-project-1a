@@ -8,6 +8,7 @@
 
 namespace CMPUT350 {
 
+// A color with 8-bit red, green and blue channels.
 struct RGBColor {
     uint8_t r, g, b;
     RGBColor(uint8_t r, uint8_t g, uint8_t b) : r(r), g(g), b(b) {}
@@ -28,6 +29,13 @@ const RGBColor grey(200, 200, 200);
 
 }  // namespace Colors
 
+/**
+ * @brief Draws shapes and text to the window.
+ *
+ * Positions are in context coordinates: they are rotated and offset by the transform the
+ * engine sets before calling an object's render methods. Only GameEngine can change the
+ * transform. See DrawContext.cpp for details of each method.
+ */
 class DrawContext {
 public:
     DrawContext(std::shared_ptr<sf::RenderWindow> mWindow, std::shared_ptr<sf::Font> font);

@@ -18,6 +18,11 @@ namespace CMPUT350 {
 
 class DrawContext;
 
+/**
+ * @brief Owns the window and game objects and runs the main game loop.
+ *
+ * Create one, add game objects with AddGameObject(), then call Run().
+ */
 class GameEngine : public EngineView {
 public:
     GameEngine(unsigned int width, unsigned int height, const std::string& name);

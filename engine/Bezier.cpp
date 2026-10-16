@@ -3,17 +3,41 @@
 
 namespace CMPUT350 {
 
+/**
+ * @brief Constructs a path made of one or more cubic Bezier segments.
+ *
+ * @param pts The control points. A path with n segments needs 3n + 1 points: each segment
+ *            uses four points, and consecutive segments share their end and start point.
+ */
 Bezier::Bezier(const std::vector<Point2D> &pts) : points(pts) {
 }
 
+/**
+ * @brief Gets the point on this path at parameter t.
+ * @see GetPoint(const std::vector<Point2D>&, float)
+ */
 Point2D Bezier::GetPoint(float t) const {
     return GetPoint(points, t);
 }
 
+/**
+ * @brief Gets the derivative of this path at parameter t.
+ * @see GetSlope(const std::vector<Point2D>&, float)
+ */
 Point2D Bezier::GetSlope(float t) const {
     return GetSlope(points, t);
 }
 
+/**
+ * @brief Gets the point on a multi-segment Bezier path at parameter t.
+ *
+ * @param pts The control points (3n + 1 points for n segments).
+ * @param t The position along the path, from 0 to n. The integer part picks the segment and
+ *          the fractional part is the position within it, so t = 1.5 is halfway through the
+ *          second segment. Values of n or more use the last segment.
+ * @return The point on the curve, found with De Casteljau's algorithm, or (0, 0) if pts has
+ *         fewer than 4 points.
+ */
 Point2D Bezier::GetPoint(const std::vector<Point2D> &pts, float t) {
     if (pts.size() < 4) return Point2D();
 
@@ -41,6 +65,14 @@ Point2D Bezier::GetPoint(const std::vector<Point2D> &pts, float t) {
     return tmp[0];
 }
 
+/**
+ * @brief Gets the derivative (direction of travel) of a multi-segment Bezier path.
+ *
+ * @param pts The control points (3n + 1 points for n segments).
+ * @param t The position along the path, chosen the same way as in GetPoint().
+ * @return The derivative of the cubic segment at t. It points along the curve and is not
+ *         normalized. Returns (0, 0) if pts has fewer than 4 points.
+ */
 Point2D Bezier::GetSlope(const std::vector<Point2D> &pts, float t) {
     if (pts.size() < 4) return Point2D();
 
@@ -63,6 +95,13 @@ Point2D Bezier::GetSlope(const std::vector<Point2D> &pts, float t) {
     return Point2D(x, y);
 }
 
+/**
+ * @brief Gets the four control points of one cubic segment.
+ *
+ * @param pts The control points of the whole path.
+ * @param t The index of the segment, starting at 0.
+ * @return Points 3t to 3t + 3 of pts. t must be a valid segment index, since it is not checked.
+ */
 std::vector<Point2D> Bezier::GetSegment(const std::vector<Point2D> &pts, int t) {
     std::vector<Point2D> segment(pts.begin() + (3*t), pts.begin() + (3*t) + 4);
     return segment;

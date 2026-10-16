@@ -8,6 +8,9 @@
 
 namespace CMPUT350 {
 
+/**
+ * @brief Everything the engine passes to a game object's methods each frame.
+ */
 class GameContext {
 public:
     EngineView *mEngineView;
