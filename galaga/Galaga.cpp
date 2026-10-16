@@ -1,3 +1,7 @@
+/**
+ * @file Galaga.cpp
+ * @brief Implementation of the Galaga game controller.
+ */
 #include "Galaga.h"
 #include "Player.h"
 #include "Enemy.h"
@@ -6,6 +10,7 @@
 #include "Enemy2.h"
 #include "Stars.h"
 
+/// Starts on the title screen with 0 points at level 1.
 Galaga::Galaga(int width, int height) :
     state(State::InsertCoins),
     lastState(State::InsertCoins),
@@ -15,6 +20,16 @@ Galaga::Galaga(int width, int height) :
     level(1) {
 }
 
+/**
+ * One-time setup:
+ *  - Binds A/Left and D/Right (press and release) to movement notifications,
+ *    Space to "Fire", 5 to "InsertCoins" and 1 to "StartGame".
+ *  - Registers this object for enemy/player death notifications.
+ *  - Adds a 250-star background covering the whole window.
+ *  - Builds the entrance path templates. Index order in `entrances`:
+ *    0 = topSCurveLeft, 1 = topSCurveRight, 2 = leftDoubleLoop,
+ *    3 = zigZagDive, 4 = rightDoubleLoop.
+ */
 void Galaga::Initialize(CMPUT350::GameContext *context) {
     context->mEngineView->InstallKeyDownNotification(CMPUT350::Key::A, "MoveLeftHeld");
     context->mEngineView->InstallKeyUpNotification(CMPUT350::Key::A, "MoveLeftReleased");
@@ -45,30 +60,38 @@ void Galaga::Initialize(CMPUT350::GameContext *context) {
      * Many paths were provided, these are the ones that were picked for usage.
      */
 
+    // Each template has 9 points; SpawnEnemy() appends the formation slot as the 10th,
+    // giving 3 cubic Bezier segments.
+
+    // Enters from the top-left and sweeps through an S-curve.
     std::vector<CMPUT350::Point2D> topSCurveLeft = {
         {200, -60}, {200, 200}, {600, 200}, {600, 400},
         {600, 600}, {150, 600}, {150, 450},
         {150, 300}, {500, 250}
     };
 
+    // Mirror image of topSCurveLeft, entering from the top-right.
     std::vector<CMPUT350::Point2D> topSCurveRight = {
         {568, -60}, {568, 200}, {168, 200}, {168, 400},
         {168, 600}, {618, 600}, {618, 450},
         {618, 300}, {268, 250}
     };
 
+    // Enters from off the right edge and loops twice.
     std::vector<CMPUT350::Point2D> rightDoubleLoop = {
         {828, 200}, {400, 100}, {100, 300}, {300, 450},
         {500, 600}, {650, 350}, {450, 250},
         {250, 200}, {300, 500}
     };
 
+    // Enters from off the left edge and loops twice.
     std::vector<CMPUT350::Point2D> leftDoubleLoop = {
         {-60, 200}, {368, 100}, {668, 300}, {468, 450},
         {268, 600}, {118, 350}, {318, 250},
         {518, 200}, {468, 500}
     };
 
+    // Enters from the top-centre and zig-zags side to side.
     std::vector<CMPUT350::Point2D> zigZagDive = {
         {384, -60}, {100, 100}, {100, 300}, {384, 350},
         {668, 400}, {668, 600}, {450, 650},
@@ -82,7 +105,28 @@ void Galaga::Initialize(CMPUT350::GameContext *context) {
     entrances.push_back(rightDoubleLoop);
 }
 
+/**
+ * Runs the state machine for one frame. `elapsed` is the number of frames
+ * since the current state was entered.
+ *
+ *  - InsertCoins: wait for the "InsertCoins" key (5).
+ *  - StartGame:   wait for the "StartGame" key (1).
+ *  - Startup:     create the player if needed, reset wave counters, then after
+ *                 STARTUP_WAIT_FRAMES move to Waves.
+ *  - Waves:       spawn NUM_ENEMIES enemies per wave, one every
+ *                 ENEMY_SPAWN_INTERVAL frames. A new wave starts only once all
+ *                 enemies are in formation. When every wave is in formation,
+ *                 move to Gameplay.
+ *  - Gameplay:    every ATTACK_WAIT_FRAMES frames, send up to 3 enemies
+ *                 (round robin) to attack the player, but only if every enemy is
+ *                 in formation. While the player is immune, no attacks start;
+ *                 immunity is reset once all enemies are back in formation.
+ *                 If all enemies are dead, go to the next level (Startup).
+ *  - GameOver:    kill every player, enemy and bullet, then after
+ *                 GAMEOVER_WAIT_FRAMES reset score/level and return to the title.
+ */
 void Galaga::Update(CMPUT350::GameContext* context) {
+    // record the frame on which a new state was entered
     if (state != lastState) {
         lastState = state;
         stateStartFrame = context->currentFrame;
@@ -100,6 +144,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
             break;
         case State::Startup:
             context->mNotificationManager->Unregister(context->CurrObject, "StartGame");
+            // only create a player for a new game; it carries over between levels
             if (mPlayer.expired()) {
                 std::shared_ptr<Player> player = std::make_shared<Player>(CMPUT350::Point2D(context->ScreenContext->GetWindowWidth() / 2, 900));
                 context->mEngineView->AddGameObject(player);
@@ -134,6 +179,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                         }
                     }
                 }
+                // start the next wave once the previous one has settled (or immediately for the first wave)
                 if (readyNextWave || !enemyInit) {
                     spawnWaves--;
                     spawnEnemy = NUM_ENEMIES;
@@ -162,6 +208,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                     state = State::GameOver;
                     return;
                 }
+                // player was hit: wait for every enemy to return to formation, then end immunity
                 else if (player->IsImmune()) {
                     bool formation = true;
                     for (const auto& obj : *context->mEngineView) {
@@ -177,6 +224,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                 }
                 else if (elapsed % ATTACK_WAIT_FRAMES == 0){
                     // call attack on subset of enemies
+                    // (skip this round entirely if any living enemy is still moving)
                     std::vector<Enemy*> enemies;
                     for (const auto& obj : *context->mEngineView) {
                         auto enemy = std::dynamic_pointer_cast<Enemy>(obj);
@@ -188,6 +236,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                         }
                         enemies.push_back(enemy.get());
                     }
+                    // pick up to 3 attackers in round-robin order, trying each enemy at most once
                     int count = 3;
                     int attempts = 0;
                     int maxAttempts = enemies.size();
@@ -216,6 +265,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
             break;
         }
         case State::GameOver:
+            // clear everything
             for (const auto& obj : *context->mEngineView) {
                 auto player = std::dynamic_pointer_cast<Player>(obj);
                 auto enemy = std::dynamic_pointer_cast<Enemy>(obj);
@@ -239,6 +289,13 @@ void Galaga::Update(CMPUT350::GameContext* context) {
     }
 }
 
+/**
+ * Draws on-screen text for the current state:
+ *  - InsertCoins / StartGame: title and the key prompt.
+ *  - Startup: "LEVEL n", plus score and lives.
+ *  - Waves / Gameplay: score (top-left) and lives (bottom-left).
+ *  - GameOver: "GAME OVER", level reached and final score.
+ */
 void Galaga::RenderUI(CMPUT350::GameContext *context) {
     if (state == State::InsertCoins) {
         context->GUIContext->DrawCenteredText("GALAGA", 32, CMPUT350::Point2D(width / 2.f, height / 2.f), WHITE);
@@ -266,6 +323,7 @@ void Galaga::RenderUI(CMPUT350::GameContext *context) {
     }
 }
 
+/// Advances the menu states, ends the game, or adds to the score (see Galaga.h).
 void Galaga::ReceiveNotification(const std::string &key) {
     if (key == "InsertCoins") {
         state = State::StartGame;
@@ -284,6 +342,23 @@ void Galaga::ReceiveNotification(const std::string &key) {
     }
 }
 
+/**
+ * Spawns one enemy for the current wave.
+ *
+ * Formation layout: NUM_ENEMIES columns spread evenly between a 50 px margin
+ * on each side; each wave is a row 40 px below the previous, starting at
+ * y = 50.
+ *
+ * Wave types (spawnWaves has already been decremented for the current wave):
+ *  - spawnWaves == 0 or 4 (first/last wave when NUM_WAVES is 5):
+ *    Enemy2s that alternate between the left and right S-curve entrances,
+ *    filling the row from the middle outward.
+ *  - Other waves: Enemy1s that all use entrances[spawnWaves + 1] and fill
+ *    the row from right to left.
+ *
+ * The formation slot is appended to the entrance template so the path ends
+ * exactly in the enemy's slot.
+ */
 void Galaga::SpawnEnemy(CMPUT350::GameContext* context) {
     auto width = context->GUIContext->GetWindowWidth();
     auto height = context->GUIContext->GetWindowHeight();
@@ -299,6 +374,8 @@ void Galaga::SpawnEnemy(CMPUT350::GameContext* context) {
 
     // first and last waves have a symmetric opening
     if (spawnWaves == 0 || spawnWaves == 4) {
+        // map spawn order to columns; spawnEnemy counts down, so with 8 enemies the
+        // columns fill as 4, 3, 5, 2, 6, 1, 7, 0 (from the middle outward)
         int i = spawnEnemy - 1;
         int col = (i % 2 == 0) ? i / 2 : (NUM_ENEMIES - 1) - i / 2;
         x = margin + col * spacing;

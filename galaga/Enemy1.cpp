@@ -1,9 +1,23 @@
+/**
+ * @file Enemy1.cpp
+ * @brief Implementation of Enemy1 (cyan, 1 health, weaving attack).
+ */
 #include "Enemy1.h"
 #include "Bullet.h"
 
+/// Constructs the base enemy and gives it 1 health.
 Enemy1::Enemy1(CMPUT350::Point2D loc, const std::vector<CMPUT350::Point2D>& path) : Enemy(loc, path) {
     SetHealth(1);
 }
+/**
+ * Builds a weaving attack path from the enemy's current position: it loops
+ * up and toward the screen centre, then zig-zags down past the target
+ * (±220 px either side of target.x), and finally drops straight down off the
+ * bottom of the screen (y = 1100). `side` mirrors the path for enemies on the
+ * right half of the screen.
+ *
+ * If the attack starts, the enemy gets 3 shots to fire during the dive.
+ */
 bool Enemy1::Attack(CMPUT350::GameContext *context, const CMPUT350::Point2D &target) {
     CMPUT350::Point2D start = GetLocation();
 
@@ -43,12 +57,29 @@ bool Enemy1::Attack(CMPUT350::GameContext *context, const CMPUT350::Point2D &tar
     return false;
 }
 
+/// Draws each ship rectangle with its matching colour from `colors`.
 void Enemy1::RenderForeground(CMPUT350::GameContext *context) {
     for (int i = 0; i < shapes.size(); i++) {
         context->ScreenContext->DrawRect(shapes[i].shape.rect, colors[i]);
     }
 }
 
+/**
+ * Per-frame update, in priority order:
+ *  1. If killed: mark as not alive and notify Galaga for scoring
+ *     ("EnemyDiedWhileMoving" = double points if it was on a path,
+ *     otherwise "EnemyDied").
+ *  2. If in formation: sway horizontally around the formation slot.
+ *  3. If on a path: advance t so the enemy moves ~PIXELS_PER_FRAME pixels,
+ *     then either
+ *       - keep moving (and fire every FIRE_NTH_FRAME frames while attacking,
+ *         up to fireCount shots),
+ *       - switch from the finished attack to the side return path, or
+ *       - snap into the formation slot once the entrance/return path ends.
+ *
+ * A path with N control points has (N - 1) / 3 cubic segments, which is the
+ * maximum value of t.
+ */
 void Enemy1::Update(CMPUT350::GameContext *context) {
     if (died) {
         isAlive = false;

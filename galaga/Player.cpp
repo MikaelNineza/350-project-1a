@@ -1,11 +1,23 @@
+/**
+ * @file Player.cpp
+ * @brief Implementation of the Player ship.
+ */
 #include "Player.h"
 #include "Bullet.h"
 #include "Enemy.h"
 
+/// Horizontal distance the player moves per frame (pixels).
 #define MOVEMENT_SPEED 15.f
+/// Width of the player's collision box (pixels).
 #define PLAYER_WIDTH 40.f
+/// Height of the player's collision box (pixels).
 #define PLAYER_HEIGHT 40.f
 
+/**
+ * Initialises the player with 3 lives at the given location and builds the
+ * ship drawing: 14 rectangles in local coordinates (fitting inside the 40x40
+ * bounds), each paired with a colour at the same index in `colors`.
+ */
 Player::Player(CMPUT350::Point2D loc) : loc(loc), isAlive(true), requestFire(false), requestLeft(false), requestRight(false), lives(3), died(false), immune(false)
 {
     /*
@@ -57,6 +69,7 @@ Player::Player(CMPUT350::Point2D loc) : loc(loc), isAlive(true), requestFire(fal
     colors.push_back(CMPUT350::Colors::white);
 }
 
+/// Subscribes to the input notifications installed by Galaga and to "ResetImmunity".
 void Player::Initialize(CMPUT350::GameContext* context)
 {
     context->mNotificationManager->Register(context->CurrObject, "MoveLeftHeld");
@@ -67,6 +80,17 @@ void Player::Initialize(CMPUT350::GameContext* context)
     context->mNotificationManager->Register(context->CurrObject, "ResetImmunity");
 }
 
+/**
+ * Per-frame update:
+ *  1. If killed: mark as not alive, send "PlayerDied" and stop.
+ *  2. If immune: send "PlayerImmune". (deprecated, now uses helper IsImmune())
+ *  3. Drop references to bullets the engine has already removed.
+ *  4. If fire was requested: fire a bullet upward from the ship's nose,
+ *     unless immune or 2 bullets are already on screen. Note that when
+ *     immune, this returns early and skips movement for the frame.
+ *  5. Move left or right (clamped to the screen) if exactly one direction
+ *     key is held.
+ */
 void Player::Update(CMPUT350::GameContext* context)
 {
     if (died) {
@@ -75,10 +99,6 @@ void Player::Update(CMPUT350::GameContext* context)
         return;
     }
 
-    // notify galaga that player is immune, so they can't take damage or attack
-    if (immune) {
-        context->mNotificationManager->Notify("PlayerImmune");
-    }
     // remove bullets that are no longer in the engine
     // engine responsible for dumping it after checking isAlive
     std::vector<std::weak_ptr<CMPUT350::CollisionObject>> aux;
@@ -118,10 +138,16 @@ void Player::Update(CMPUT350::GameContext* context)
     }
 }
 
+/// Not used by the player.
 void Player::LateUpdate(CMPUT350::GameContext* context)
 {
 }
 
+/**
+ * Converts input notifications into requests that Update() acts on:
+ * held/released keys set or clear the movement flags, "Fire" queues one shot,
+ * and "ResetImmunity" ends the post-hit immunity.
+ */
 void Player::ReceiveNotification(const std::string& key)
 {
     if (key == "MoveLeftHeld") {
@@ -144,11 +170,16 @@ void Player::ReceiveNotification(const std::string& key)
     }
 }
 
+/// Not used by the player.
 void Player::RenderBackground(CMPUT350::GameContext* context)
 {
     return;
 }
 
+/**
+ * Draws each ship rectangle with its colour. While immune, the ship is only
+ * drawn on alternating 5-frame intervals, making it blink.
+ */
 void Player::RenderForeground(CMPUT350::GameContext* context)
 {
     if (immune) {
@@ -165,6 +196,16 @@ void Player::RenderForeground(CMPUT350::GameContext* context)
     }
 }
 
+/**
+ * Collision handling (skipped entirely while immune):
+ *  - Enemy bullet: lose a life. The player's own bullets are ignored.
+ *  - Living enemy ship: lose a life.
+ * Afterwards, if no lives remain the player is killed; otherwise it becomes
+ * immune until Galaga sends "ResetImmunity".
+ *
+ * Note: immunity is set after any non-immune collision, including with an
+ * object that did not cause damage.
+ */
 void Player::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)
 {
     if (immune) {
@@ -178,27 +219,36 @@ void Player::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& ob
             return;
         }
         TakeDamage();
+        immune = true;
     }
     if (enemy != nullptr && enemy->IsAlive()) {
         TakeDamage();
+        immune = true;
     }
     if (lives == 0) {
         Kill();
         return;
     }
-    immune = true;
 }
 
+/// Flags the player as killed; Update() finishes the removal on the next frame.
 void Player::Kill()
 {
     died = true;
 }
 
+/// Returns false once the player has been removed.
 bool Player::IsAlive() const
 {
     return isAlive;
 }
 
+/**
+ * Returns a 40x40 collision box centred on the ship, in local coordinates.
+ *
+ * Note: uses a function-local static, so the returned reference is only
+ * valid until the next call.
+ */
 const CMPUT350::Rect& Player::GetBounds()
 {
     static CMPUT350::Rect sBounds(0, 0, 0, 0);
@@ -207,26 +257,32 @@ const CMPUT350::Rect& Player::GetBounds()
     return sBounds;
 }
 
+/// Returns the rectangles making up the ship drawing.
 const std::vector<CMPUT350::Shape>& Player::GetShapes() {
     return shapes;
 }
 
+/// Returns the ship's current world position.
 CMPUT350::Point2D Player::GetLocation() const {
     return loc;
 }
 
+/// The player ship is never rotated.
 float Player::GetRotation() const {
     return 0.f;
 }
 
+/// Returns the number of remaining lives.
 int Player::GetLives() const {
     return lives;
 }
 
+/// Removes one life. Death is handled in CollisionEnter().
 void Player::TakeDamage() {
     lives--;
 }
 
+/// Returns true while the player is immune after being hit.
 bool Player::IsImmune() {
     return immune;
 }

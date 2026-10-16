@@ -1,9 +1,19 @@
+/**
+ * @file Enemy2.cpp
+ * @brief Implementation of Enemy2 (red, 2 health, swooping attack).
+ */
 #include "Enemy2.h"
 #include "Bullet.h"
 
+/// Constructs the base enemy and gives it 2 health.
 Enemy2::Enemy2(CMPUT350::Point2D loc, const std::vector<CMPUT350::Point2D>& path) : Enemy(loc, path) {
     SetHealth(2);
 }
+/**
+ * Builds a swooping attack path: a loop out to the right of the start
+ * position, a pass through target.x, a swing 200 px to the left of the
+ * target, and then a straight drop off the bottom of the screen (y = 1100).
+ */
 bool Enemy2::Attack(CMPUT350::GameContext *context, const CMPUT350::Point2D &target) {
     CMPUT350::Point2D start = GetLocation();
 
@@ -19,6 +29,7 @@ bool Enemy2::Attack(CMPUT350::GameContext *context, const CMPUT350::Point2D &tar
     return BeginAttack(attackPath);
 }
 
+/// Draws each ship rectangle using the red table at full health, magenta once damaged.
 void Enemy2::RenderForeground(CMPUT350::GameContext *context) {
     auto &colors = health > 1 ? redShip : magentaShip;
     for (int i = 0; i < shapes.size(); i++) {
@@ -26,6 +37,18 @@ void Enemy2::RenderForeground(CMPUT350::GameContext *context) {
     }
 }
 
+/**
+ * Per-frame update, in priority order:
+ *  1. If killed: mark as not alive and notify Galaga for scoring
+ *     ("EnemyDiedWhileMoving" = double points if it was on a path,
+ *     otherwise "EnemyDied").
+ *  2. If in formation: sway horizontally around the formation slot.
+ *  3. If on a path: advance t so the enemy moves ~PIXELS_PER_FRAME pixels,
+ *     then either
+ *       - keep moving (and fire every FIRE_NTH_FRAME frames while attacking),
+ *       - switch from the finished attack to the side return path, or
+ *       - snap into the formation slot once the entrance/return path ends.
+ */
 void Enemy2::Update(CMPUT350::GameContext *context) {
     if (died) {
         isAlive = false;

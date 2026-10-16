@@ -1,7 +1,17 @@
+/**
+ * @file Enemy.cpp
+ * @brief Implementation of the shared Enemy base class.
+ */
 #include "Enemy.h"
 #include "Bullet.h"
 #include "Player.h"
 
+/**
+ * Places the enemy at the start of its entrance path, marks it as moving
+ * along that path, and builds the ship's rectangles. The rectangles are in
+ * local coordinates centred on the enemy and fit inside the 40x40 bounds.
+ * Their order matches the colour tables in Enemy1/Enemy2.
+ */
 Enemy::Enemy(CMPUT350::Point2D formationLoc, const std::vector<CMPUT350::Point2D> &path) : formationLoc(formationLoc), path(path), t(0.f), isAlive(true), curve(path), onPath(true), attacking(false), died(false), killedPlayer(false)
 {
     loc = path[0];
@@ -32,10 +42,16 @@ Enemy::Enemy(CMPUT350::Point2D formationLoc, const std::vector<CMPUT350::Point2D
     shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-1.f, -4.f), 2.f, 4.f));     // 13 cockpit highlight
 }
 
+/// No setup required.
 void Enemy::Initialize(CMPUT350::GameContext* context)
 {
 }
 
+/**
+ * Replaces the current path with the attack path and restarts at t = 0.
+ * Refused (returns false) if the enemy is already moving along a path,
+ * i.e. still entering, attacking, or returning to formation.
+ */
 bool Enemy::BeginAttack(const std::vector<CMPUT350::Point2D>& attackPath) {
     if (onPath) {
         return false;
@@ -48,26 +64,36 @@ bool Enemy::BeginAttack(const std::vector<CMPUT350::Point2D>& attackPath) {
     return true;
 }
 
+/// Base update does nothing; see Enemy1::Update / Enemy2::Update.
 void Enemy::Update(CMPUT350::GameContext* context)
 {
     return;
 }
 
+/// Not used by enemies.
 void Enemy::LateUpdate(CMPUT350::GameContext* context)
 {
     return;
 }
 
+/// Not used by enemies.
 void Enemy::RenderBackground(CMPUT350::GameContext* context)
 {
     return;
 }
 
+/// Base render does nothing; subclasses draw the ship with their colours.
 void Enemy::RenderForeground(CMPUT350::GameContext* context)
 {
     return;
 }
 
+/**
+ * Collision handling:
+ *  - Player bullet: lose one health; die at zero health.
+ *  - Enemy bullet: ignored (no friendly fire).
+ *  - Player ship: die, unless the player is currently immune.
+ */
 void Enemy::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)
 {
     std::shared_ptr<Bullet> bullet = std::dynamic_pointer_cast<Bullet>(obj);
@@ -89,16 +115,27 @@ void Enemy::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj
     }
 }
 
+/**
+ * Flags the enemy as killed. The subclass Update() sees this on the next
+ * frame, sends the score notification and sets isAlive to false.
+ */
 void Enemy::Kill()
 {
     died = true;
 }
 
+/// Returns false once the enemy has been removed.
 bool Enemy::IsAlive() const
 {
     return isAlive;
 }
 
+/**
+ * Returns a 40x40 collision box centred on the enemy, in local coordinates.
+ *
+ * Note: uses a function-local static, so the returned reference is shared by
+ * all enemies and is only valid until the next call.
+ */
 const CMPUT350::Rect& Enemy::GetBounds()
 {
     static CMPUT350::Rect sBounds(0, 0, 0, 0);
@@ -107,14 +144,21 @@ const CMPUT350::Rect& Enemy::GetBounds()
     return sBounds;
 }
 
+/// Returns the rectangles making up the ship drawing.
 const std::vector<CMPUT350::Shape>& Enemy::GetShapes() {
     return shapes;
 }
 
+/// Returns the enemy's current world position.
 CMPUT350::Point2D Enemy::GetLocation() const {
     return loc;
 }
 
+/**
+ * While on a path, rotates the ship to face along the curve's tangent at t.
+ * The ship is drawn nose-up, so pi/2 is added to convert from the math angle
+ * to the screen's orientation. In formation the ship is not rotated.
+ */
 float Enemy::GetRotation() const {
     if (!onPath) {
         return 0.f;
@@ -123,14 +167,17 @@ float Enemy::GetRotation() const {
     return std::atan2(heading.y, heading.x) + PI / 2.f; // 0 deg w.r.t 2d plane, adjusted to screencontext with pi/2 clockwise rotation
 }
 
+/// True when the enemy is resting in its slot rather than following a path.
 bool Enemy::InFormation() const {
     return !onPath;
 }
 
+/// Sets the enemy's hit points.
 void Enemy::SetHealth(int newHealth) {
     health = newHealth;
 }
 
+/// Returns the enemy's remaining hit points.
 int Enemy::GetHealth() const {
     return health;
 }
@@ -142,6 +189,11 @@ int Enemy::GetHealth() const {
  * The end of the attack is at "loc" and the formation location is "formationLoc", assume that these are given.
  *
  * A sample path that didn't work as well was previously provided with the prompt as a reference. Gemini gave a helper instead of a fixed set of points.
+ */
+/**
+ * Builds the 7 control points (two cubic segments) of the return path.
+ * The side is chosen from which half of the 768-wide screen the attack ended
+ * in: x = 50 for the left edge, x = 718 for the right edge.
  */
 std::vector<CMPUT350::Point2D> Enemy::BuildSideReturnPath(
     const CMPUT350::Point2D& loc,
