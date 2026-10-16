@@ -12,15 +12,16 @@ DrawContext::DrawContext(std::shared_ptr<sf::RenderWindow> window, std::shared_p
     : mWindow(window), mFont(font) {}
 
 /**
- * @brief Draws text centered on a given point.
+ * @brief Draws text whose lines are centered relative to each other.
  *
- * @param text The string to draw.
+ * @param text The string to draw. May contain several lines separated by '\n'.
  * @param pixelSize The character size of the text, in pixels.
- * @param p The point, in window pixel coordinates, that the center of the text is placed on.
+ * @param p The top-left position of the text block, in context coordinates.
  * @param c The color of the text.
  *
- * The text's origin is set to the center of its bounding box, so the text is
- * centered both horizontally and vertically on p.
+ * Only the line alignment is centered: each line is centered within the width of the
+ * widest line. The text block itself is not centered on p; p is its top-left corner,
+ * as in DrawText.
  */
 void DrawContext::DrawCenteredText(const std::string &text, int pixelSize, Point2D p, RGBColor c) {
     sf::Text textToDraw(*mFont);
@@ -40,8 +41,10 @@ void DrawContext::DrawCenteredText(const std::string &text, int pixelSize, Point
  *
  * @param text The string to draw.
  * @param pixelSize The character size of the text, in pixels.
- * @param p The top-left position of the text, in window pixel coordinates.
+ * @param p The top-left position of the text, in context coordinates.
  * @param c The color of the text.
+ *
+ * The text is rotated by the context's rotation.
  */
 void DrawContext::DrawText(const std::string &text, int pixelSize, Point2D p, RGBColor c) {
     sf::Text textToDraw(*mFont);
@@ -58,7 +61,7 @@ void DrawContext::DrawText(const std::string &text, int pixelSize, Point2D p, RG
 /**
  * @brief Draws a filled circle centered on a given point.
  *
- * @param p The center of the circle, in window pixel coordinates.
+ * @param p The center of the circle, in context coordinates.
  * @param radius The radius of the circle, in pixels.
  * @param c The fill color of the circle.
  */
@@ -72,10 +75,14 @@ void DrawContext::DrawCircle(Point2D p, float radius, RGBColor c) {
 }
 
 /**
- * @brief Draws a filled axis-aligned rectangle.
+ * @brief Draws a filled rectangle.
  *
- * @param r The rectangle to draw, given by its top-left corner, width and height in pixels.
+ * @param r The rectangle to draw, given by its top-left corner (in context coordinates),
+ *          width and height in pixels.
  * @param c The fill color of the rectangle.
+ *
+ * The rectangle is rotated about its top-left corner by the context's rotation, so it is
+ * only axis-aligned when the rotation is 0.
  */
 void DrawContext::DrawRect(Rect r, RGBColor c) {
     sf::RectangleShape rectangle({r.width, r.height});
@@ -88,14 +95,16 @@ void DrawContext::DrawRect(Rect r, RGBColor c) {
 }
 
 /**
- * @brief Draws the outline of an axis-aligned rectangle with no fill.
+ * @brief Draws the outline of a rectangle with no fill.
  *
- * @param r The rectangle to outline, given by its top-left corner, width and height in pixels.
+ * @param r The rectangle to outline, given by its top-left corner (in context coordinates),
+ *          width and height in pixels.
  * @param width The thickness of the outline, in pixels.
  * @param c The color of the outline.
  *
  * The outline is drawn outside the edges of r, so the drawn frame extends
- * width pixels beyond r on every side.
+ * width pixels beyond r on every side. Like DrawRect, the rectangle is rotated about its
+ * top-left corner by the context's rotation.
  */
 void DrawContext::FrameRect(Rect r, float width, RGBColor c) {
     sf::RectangleShape rectangle({r.width, r.height});
@@ -112,8 +121,8 @@ void DrawContext::FrameRect(Rect r, float width, RGBColor c) {
 /**
  * @brief Draws a line between two points with a specified width and color.
  *
- * @param from The starting point of the line, in window pixel coordinates.
- * @param to The ending point of the line, in window pixel coordinates.
+ * @param from The starting point of the line, in context coordinates.
+ * @param to The ending point of the line, in context coordinates.
  * @param width The thickness of the line, in pixels.
  * @param c The color of the line.
  *
@@ -159,16 +168,35 @@ int DrawContext::GetWindowWidth() { return mWindow->getSize().x; }
  */
 int DrawContext::GetWindowHeight() { return mWindow->getSize().y; }
 
+/**
+ * @brief Sets where the origin of the context coordinates is placed in the window.
+ *
+ * @param p The window position, in pixels, that the context point (0, 0) maps to.
+ *          The engine sets this to the location of the object being drawn.
+ */
 void DrawContext::SetContextOffset(Point2D p) {
     mOffset = p;
 }
 
+/**
+ * @brief Sets how much context coordinates are rotated about the context origin.
+ *
+ * @param rotation The rotation, in radians. Because y increases downward in the window,
+ *                 a positive rotation turns clockwise on screen.
+ */
 void DrawContext::SetContextRotation(float rotation) {
     // Note for future: this might not work since positive y goes down.
     // After we complete the implementation if rotation seems wrong, fix here!
     mRotation = rotation;
 }
 
+/**
+ * @brief Converts a point from context coordinates to window coordinates.
+ *
+ * @param p The point in context coordinates.
+ * @return The point rotated by the context rotation about the origin, then moved by the
+ *         context offset.
+ */
 Point2D DrawContext::Transform(Point2D p) {
     Point2D pNew;
     pNew.x = p.x * cos(mRotation) - p.y * sin(mRotation) + mOffset.x;
@@ -177,6 +205,13 @@ Point2D DrawContext::Transform(Point2D p) {
     return pNew;
 }
 
+/**
+ * @brief Converts a point from window coordinates to context coordinates.
+ *
+ * @param p The point in window coordinates.
+ * @return The point moved back by the context offset, then rotated by the negative of the
+ *         context rotation. This is the inverse of Transform(Point2D).
+ */
 Point2D DrawContext::ReverseTransform(Point2D p) {
     Point2D pNew;
     float tempX = p.x - mOffset.x;
@@ -188,6 +223,14 @@ Point2D DrawContext::ReverseTransform(Point2D p) {
     return pNew;
 }
 
+/**
+ * @brief Converts a rectangle from context coordinates to a window-space bounding box.
+ *
+ * @param r The rectangle in context coordinates.
+ * @return The smallest axis-aligned rectangle, in window coordinates, that contains all
+ *         four transformed corners of r. When the rotation is not a multiple of 90 degrees,
+ *         the result is larger than r.
+ */
 Rect DrawContext::Transform(Rect r) {
     Point2D topLeft = r.topLeft;
     Point2D topRight = topLeft;

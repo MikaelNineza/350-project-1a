@@ -9,6 +9,11 @@ namespace CMPUT350 {
 
 class GameObject;
 
+/**
+ * @brief The part of the engine that game objects can use, through GameContext::mEngineView.
+ *
+ * See GameEngine for the details of each method.
+ */
 class EngineView {
     using tGameObject = std::vector<std::shared_ptr<GameObject>>;
 public:

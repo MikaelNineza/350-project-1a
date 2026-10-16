@@ -7,6 +7,13 @@
 #include <unordered_map>
 
 namespace CMPUT350 {
+
+/**
+ * @brief Sends string notifications to the game objects that registered for them.
+ *
+ * Objects are held by weak pointer, so registering does not keep an object alive, and
+ * destroyed objects are removed automatically the next time their notification is sent.
+ */
 class NotificationManager {
 
 

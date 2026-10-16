@@ -1,6 +1,8 @@
 namespace CMPUT350 {
 
 
+// Key scancodes for InstallKeyDownNotification() and InstallKeyUpNotification().
+// The values match sf::Keyboard::Scancode.
 namespace Key
 {
 const unsigned int A= 0;
