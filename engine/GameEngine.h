@@ -36,6 +36,7 @@ public:
 	const_iterator begin() const override;
 	const_iterator end() const override;
 
+    void HandleCollisions(DrawContext &drawContext);
     void Run();
 
     bool ProcessEvents(GameContext *context);

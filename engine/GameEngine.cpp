@@ -59,6 +59,111 @@ void GameEngine::AddGameObject(std::shared_ptr<GameObject> gameObject) {
     mNewObjects.push_back(std::move(gameObject));
 }
 
+void GameEngine::HandleCollisions(DrawContext &drawContext) {
+    // For each collision object, save their world bounds for later.
+    std::vector<std::shared_ptr<CollisionObject>> colObjects;
+    std::vector<Rect> worldBounds;
+    for (auto& obj : mGameObjects) {
+        auto colObj = std::dynamic_pointer_cast<CollisionObject>(obj);
+        if (!colObj) {
+            continue;
+        }
+
+        drawContext.SetContextOffset(colObj->GetLocation());
+        drawContext.SetContextRotation(colObj->GetRotation());
+        colObjects.push_back(colObj);
+        worldBounds.push_back(drawContext.Transform(colObj->GetBounds()));
+    }
+
+    int objCount = colObjects.size();
+    for (int i = 0; i < objCount; ++i) {
+        for (int j = i + 1; j < objCount; ++j) {
+            
+            Rect overlap = worldBounds[i];
+            overlap &= worldBounds[j];
+            
+            if (overlap.width <= 0 || overlap.height <= 0) {
+                continue;
+            }
+            
+            std::shared_ptr<CollisionObject> objs[2] = {colObjects[i], colObjects[j]};
+            std::vector<Shape> worldShapes[2];
+
+            for (int k = 0; k < 2; ++k) {
+                drawContext.SetContextOffset(objs[k]->GetLocation());
+                drawContext.SetContextRotation(objs[k]->GetRotation());
+
+                for (const Shape &s : objs[k]->GetShapes()) {
+                    if (s.t == ShapeType::kRect) {
+                        worldShapes[k].push_back(drawContext.Transform(s.shape.rect));
+                    }
+                    else if (s.t == ShapeType::kCircle) {
+                        Shape circle = Shape(Circle(drawContext.Transform(s.shape.circle.center), s.shape.circle.radius));
+                        worldShapes[k].push_back(circle);
+                    }
+                    else {
+                        Shape line = Shape(Line(drawContext.Transform(s.shape.line.p1), drawContext.Transform(s.shape.line.p2)));
+                        worldShapes[k].push_back(line);
+                    }
+                }
+            }
+
+
+            // Handles line collisions with lines and other shapes.
+            bool hitLine[2] = {false, false};
+            Point2D collisionPoint[2];
+            for (int k = 0; k < 2; ++k) {
+                for (const Shape &s : worldShapes[k]) {
+                    if (s.t != ShapeType::kLine) {
+                        continue;
+                    }
+
+                    int otherIdx = k ? 0 : 1;
+                    for (const Shape &other : worldShapes[otherIdx]) {
+                        if (LineCollision(s.shape.line, other, collisionPoint[k])) {
+                            hitLine[k] = true;
+                            break;
+                        }
+                    }
+
+                    if (hitLine[k]) {
+                        break;
+                    }
+                }
+
+            }
+
+            bool collisionHappened = false;
+            if (!(hitLine[0] || hitLine[1])) {
+                for (int x = 0; x < worldShapes[0].size(); ++x) {
+                    for (int y = 0; y < worldShapes[1].size(); ++y) {
+                        if (CollisionMade(worldShapes[0][x], worldShapes[1][y])) {
+                            collisionHappened = true;
+                        }
+                    }
+                }
+            } else {
+                collisionHappened = true;
+            }
+
+            if (collisionHappened) {
+                for (int k = 0; k < 2; ++k) {
+                    int otherIdx = k ? 0 : 1;
+                    if (hitLine[k]) {
+                        drawContext.SetContextOffset(objs[k]->GetLocation());
+                        drawContext.SetContextRotation(objs[k]->GetRotation());
+                        objs[k]->CollisionEnter(objs[otherIdx], drawContext.ReverseTransform(collisionPoint[k]));
+                    } else {
+                        objs[k]->CollisionEnter(objs[otherIdx]);
+                    }
+                }
+            }
+
+        }
+    }
+
+}
+
 /**
  * @brief Runs the main game loop until the window is closed.
  *
@@ -111,29 +216,7 @@ void GameEngine::Run() {
         }
 
         // 4. Process collision events
-        int objCount = mGameObjects.size();
-        for (int i = 0; i < objCount; ++i) {
-            auto firstObj = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[i]);
-            if (!firstObj) {
-                continue;
-            }
-
-            for (int j = i + 1; j < objCount; ++j) {
-                auto secondObj = std::dynamic_pointer_cast<CollisionObject>(mGameObjects[j]);
-                if (!secondObj) {
-                    continue;
-                }
-
-                Rect overlap = firstObj->GetBounds();
-                overlap &= secondObj->GetBounds();
-
-                if (overlap.width > 0 && overlap.height > 0) {
-                    firstObj->CollisionEnter(secondObj);
-                    secondObj->CollisionEnter(firstObj);
-                }
-
-            }
-        }
+        HandleCollisions(drawContext);
 
         // 5. Late updates
         for(auto& obj : mGameObjects) {
