@@ -4,13 +4,10 @@
 #include <vector>
 #include <cmath>
 
-#define BULLET_SPEED 20.0f
-#define BULLET_SIZE 5.f
-
 Bullet::Bullet(CMPUT350::Point2D location, CMPUT350::Point2D heading, bool player, std::weak_ptr<CMPUT350::GameObject> parent)
                 : location(location), prev_location(location), heading(heading), player(player), isAlive(true), parent(parent)
 {
-    shapes.emplace_back(CMPUT350::Line(-BULLET_SPEED, 0.f, 0.f, 0.f));
+    shapes.emplace_back(CMPUT350::Line(0.f, 0.f, -BULLET_SPEED, 0.f));
 }
 
 bool Bullet::IsPlayerBullet()
@@ -53,7 +50,7 @@ void Bullet::RenderBackground(CMPUT350::GameContext* context)
 void Bullet::RenderForeground(CMPUT350::GameContext* context)
 {
     // bullet rendered as a line
-    context->ScreenContext->DrawLine(CMPUT350::Point2D(-BULLET_SPEED, 0.f), CMPUT350::Point2D(0.f, 0.f), BULLET_SIZE, CMPUT350::Colors::white);
+    context->ScreenContext->DrawLine(CMPUT350::Point2D(0.f, 0.f), CMPUT350::Point2D(0.f, BULLET_SPEED), BULLET_SIZE, CMPUT350::Colors::white);
 }
 
 void Bullet::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)
@@ -89,8 +86,8 @@ const CMPUT350::Rect& Bullet::GetBounds()
 {
     static CMPUT350::Rect sBounds(0, 0, 0, 0);
 
-    auto topLeft = location - BULLET_SIZE / 2.f;
-    auto topLeftPrev = prev_location - BULLET_SIZE / 2.f;
+    auto topLeft = CMPUT350::Point2D(0.f, 0.f) - BULLET_SIZE / 2.f;
+    auto topLeftPrev = (location - prev_location) - BULLET_SIZE / 2.f;
     sBounds = CMPUT350::Rect(topLeft, BULLET_SIZE, BULLET_SIZE);
     sBounds |= CMPUT350::Rect(topLeftPrev, BULLET_SIZE, BULLET_SIZE);
     
@@ -106,7 +103,9 @@ CMPUT350::Point2D Bullet::GetLocation() const {
 }
 
 float Bullet::GetRotation() const {
-    return std::atan2(heading.y, heading.x);
+    //return std::atan2(heading.y, heading.x) + PI / 2.f;
+    return 0.f;
+
 }
 
 void Bullet::ReceiveNotification(const std::string& key) {

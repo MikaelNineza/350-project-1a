@@ -2,6 +2,7 @@
 #include "Player.h"
 #include "Enemy.h"
 #include "Bullet.h"
+#include "Enemy1.h"
 #include "Enemy2.h"
 #include "Stars.h"
 
@@ -34,6 +35,52 @@ void Galaga::Initialize(CMPUT350::GameContext *context) {
     context->mNotificationManager->Register(context->CurrObject, "EnemyDiedWhileMoving");
     context->mNotificationManager->Register(context->CurrObject, "PlayerDied");
     context->mEngineView->AddGameObject(std::make_shared<Stars>(250, CMPUT350::Rect(0, 0, context->ScreenContext->GetWindowWidth(), context->ScreenContext->GetWindowHeight())));
+
+    // all of these were ai generated curves
+    // 8. S-curve from top-left (3 segments)
+    std::vector<CMPUT350::Point2D> topSCurveLeft = {
+        {200, -60}, {200, 200}, {600, 200}, {600, 400},
+        {600, 600}, {150, 600}, {150, 450},
+        {150, 300}, {500, 250}
+    };
+
+    // 9. S-curve from top-right (3 segments, mirror of 8)
+    std::vector<CMPUT350::Point2D> topSCurveRight = {
+        {568, -60}, {568, 200}, {168, 200}, {168, 400},
+        {168, 600}, {618, 600}, {618, 450},
+        {618, 300}, {268, 250}
+    };
+
+    // 10. Wide double loop from the right edge (3 segments)
+    std::vector<CMPUT350::Point2D> rightDoubleLoop = {
+        {828, 200}, {400, 100}, {100, 300}, {300, 450},
+        {500, 600}, {650, 350}, {450, 250},
+        {250, 200}, {300, 500}
+    };
+
+    // 11. Wide double loop from the left edge (3 segments, mirror of 10)
+    std::vector<CMPUT350::Point2D> leftDoubleLoop = {
+        {-60, 200}, {368, 100}, {668, 300}, {468, 450},
+        {268, 600}, {118, 350}, {318, 250},
+        {518, 200}, {468, 500}
+    };
+
+    // 12. Zig-zag dive from top center (3 segments)
+    std::vector<CMPUT350::Point2D> zigZagDive = {
+        {384, -60}, {100, 100}, {100, 300}, {384, 350},
+        {668, 400}, {668, 600}, {450, 650},
+        {300, 700}, {200, 500}
+    };
+
+    entrances.push_back(topSCurveLeft);
+    entrances.push_back(topSCurveRight);
+    entrances.push_back(leftDoubleLoop);
+    entrances.push_back(zigZagDive);
+    entrances.push_back(rightDoubleLoop);
+
+    /*entrances.push_back(rightDoubleLoop);
+    entrances.push_back(leftDoubleLoop);
+    entrances.push_back(zigZagDive);*/
 }
 
 void Galaga::Update(CMPUT350::GameContext* context) {
@@ -60,6 +107,7 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                 mPlayer = player;
             }
             spawnEnemy = 0;
+            enemyAttackCounter = 0;
             spawnWaves = NUM_WAVES;
             if (elapsed >= STARTUP_WAIT_FRAMES) {
                 state = State::Waves;
@@ -115,13 +163,28 @@ void Galaga::Update(CMPUT350::GameContext* context) {
                     state = State::GameOver;
                     return;
                 }
-                else {
+                else if (elapsed % ATTACK_WAIT_FRAMES == 0){
                     // call attack on subset of enemies
+                    std::vector<Enemy*> enemies;
                     for (const auto& obj : *context->mEngineView) {
                         auto enemy = std::dynamic_pointer_cast<Enemy>(obj);
-                        if (enemy != nullptr && enemy->IsAlive()) {
-                            enemy->Attack(context, player->GetLocation());
+                        if (enemy == nullptr || !enemy->IsAlive()) {
+                            continue;
                         }
+                        if (!enemy->InFormation()) {
+                            return;
+                        }
+                        enemies.push_back(enemy.get());
+                    }
+                    int count = 3;
+                    int attempts = 0;
+                    int maxAttempts = enemies.size();
+                    while (count > 0 && attempts < maxAttempts) {
+                        if (enemies[enemyAttackCounter % enemies.size()]->Attack(context, player->GetLocation())) {
+                            count--;
+                            enemyAttackCounter++;
+                        }
+                        attempts++;
                     }
                 }
             }
@@ -214,22 +277,29 @@ void Galaga::SpawnEnemy(CMPUT350::GameContext* context) {
     float rowGap = 40.f;
     float topY = 50.f;
 
-    float spacing = (width - 2 * margin) / (NUM_ENEMIES - 1);
-    float x = margin + (spawnEnemy - 1) * spacing;
+    float x;
     float y = topY + (NUM_WAVES - spawnWaves - 1) * rowGap;
+    float spacing = (width - 2 * margin) / (NUM_ENEMIES - 1);
+    std::vector<CMPUT350::Point2D> entrance;
+    std::shared_ptr<Enemy> enemy;
 
-    CMPUT350::Point2D formation(x, y);
+    // first and last waves have a specific opening
+    if (spawnWaves == 0 || spawnWaves == 4) {
+        int i = spawnEnemy - 1;
+        int col = (i % 2 == 0) ? i / 2 : (NUM_ENEMIES - 1) - i / 2;
+        x = margin + col * spacing;
+        entrance = entrances[spawnEnemy % 2];
+        CMPUT350::Point2D formation(x, y);
+        entrance.push_back(formation);
+        enemy = std::make_shared<Enemy2>(formation, entrance);
+    }
+    else {
+        x = margin + (spawnEnemy - 1) * spacing;
+        entrance = entrances[spawnWaves + 1];
+        CMPUT350::Point2D formation(x, y);
+        entrance.push_back(formation);
+        enemy = std::make_shared<Enemy1>(formation, entrance);
+    }
 
-    std::vector<CMPUT350::Point2D> sample = {
-        CMPUT350::Point2D(-50.f, 300.f),
-        CMPUT350::Point2D(200.f, 300.f),
-        CMPUT350::Point2D(500.f, 100.f),
-        CMPUT350::Point2D(500.f, 400.f),
-        CMPUT350::Point2D(500.f, 600.f),
-        CMPUT350::Point2D(384.f, 400.f),
-        formation
-    };
-    std::shared_ptr<Enemy2> enemy = std::make_shared<Enemy2>(formation, sample);
     context->mEngineView->AddGameObject(enemy);
 }
-

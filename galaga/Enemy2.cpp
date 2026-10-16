@@ -21,5 +21,5 @@ bool Enemy2::Attack(CMPUT350::GameContext *context, const CMPUT350::Point2D &tar
 void Enemy2::RenderForeground(CMPUT350::GameContext *context) {
     CMPUT350::RGBColor color = GetHealth() >= 2 ? CMPUT350::Colors::yellow : CMPUT350::Colors::red;
     context->ScreenContext->DrawCircle(CMPUT350::Point2D(0.f, 0.f), ENEMY_WIDTH / 2.f, color);
-    context->ScreenContext->DrawLine(CMPUT350::Point2D(0.f, 20.f), CMPUT350::Point2D(0.f, 0.f), 5.f, CMPUT350::Colors::green);
+    context->ScreenContext->DrawLine(CMPUT350::Point2D(0.f, 20.f), CMPUT350::Point2D(0.f, 0.f), 3.f, CMPUT350::Colors::blue);
 }

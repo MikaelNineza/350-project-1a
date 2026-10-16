@@ -3,7 +3,7 @@
 #include "Player.h"
 #include "Galaga.h"
 
-const bool gUseCollisionDemo = true;
+const bool gUseCollisionDemo = false;
 
 class Ball : public CMPUT350::CollisionObject
 {

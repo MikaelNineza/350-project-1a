@@ -10,11 +10,12 @@
 #include <string>
 
 constexpr int POINTS = 10;
-constexpr int NUM_WAVES = 1;
+constexpr int NUM_WAVES = 5;
 constexpr int NUM_ENEMIES = 8;
 constexpr int STARTUP_WAIT_FRAMES = 120;
-constexpr int ENEMY_SPAWN_INTERVAL = 15;
+constexpr int ENEMY_SPAWN_INTERVAL = 5;
 constexpr int GAMEOVER_WAIT_FRAMES = 150;
+constexpr int ATTACK_WAIT_FRAMES = 60;
 
 class Player;
 
@@ -42,6 +43,8 @@ private:
     int spawnWaves;
     int spawnEnemy;
     int stateStartFrame;
+    int enemyAttackCounter;
     std::weak_ptr<Player> mPlayer;
+    std::vector<std::vector<CMPUT350::Point2D>> entrances;
 };
 #endif

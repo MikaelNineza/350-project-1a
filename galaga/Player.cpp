@@ -49,6 +49,7 @@ void Player::Update(CMPUT350::GameContext* context)
         context->mNotificationManager->Notify("PlayerDied");
         return;
     }
+
     // remove bullets that are no longer in the engine
     // engine responsible for dumping it after checking isAlive
     std::vector<std::weak_ptr<CMPUT350::CollisionObject>> aux;
@@ -62,7 +63,7 @@ void Player::Update(CMPUT350::GameContext* context)
 
     if (requestFire) {
         requestFire = false;
-        if (bullets.size() < 2) {
+        if (bullets.size() <= 2) {
             auto dir = CMPUT350::Point2D(0.0f, -1.0f); // bullet shoots straight up
             auto start_pos = loc;
             start_pos.y -= PLAYER_HEIGHT / 2.f; // bullets spawn at the top of the player
@@ -125,7 +126,7 @@ void Player::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& ob
     std::shared_ptr<Enemy> enemy = std::dynamic_pointer_cast<Enemy>(obj);
 
     if (bullet != nullptr) {
-        if (bullet->IsPlayerBullet()) {
+        if (bullet->IsPlayerBullet() || !bullet->IsAlive()) {
             return;
         }
         TakeDamage();
@@ -151,7 +152,7 @@ bool Player::IsAlive() const
 const CMPUT350::Rect& Player::GetBounds()
 {
     static CMPUT350::Rect sBounds(0, 0, 0, 0);
-    auto topLeft = loc - CMPUT350::Point2D(PLAYER_WIDTH / 2.f, PLAYER_HEIGHT / 2.f);
+    auto topLeft = CMPUT350::Point2D(0.f, 0.f) - CMPUT350::Point2D(PLAYER_WIDTH / 2.f, PLAYER_HEIGHT / 2.f);
     sBounds = CMPUT350::Rect(topLeft, PLAYER_WIDTH, PLAYER_HEIGHT); // player is 40x40 pixels
     return sBounds;
 }
