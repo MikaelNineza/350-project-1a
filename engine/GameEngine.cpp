@@ -125,6 +125,11 @@ void GameEngine::HandleCollisions(DrawContext &drawContext) {
                         } else if (shape2.t == ShapeType::kLine) {
                             collisionHappened = shape1.shape.circle.Intersects(shape2.shape.line, hitInWorld);
                             hitLine[1] = true;
+                        } else if (shape2.t == ShapeType::kRect) {
+                            drawContext.SetContextOffset(objs[1]->GetLocation());
+                            drawContext.SetContextRotation(objs[1]->GetRotation());
+                            Circle circle(drawContext.ReverseTransform(shape1.shape.circle.center), shape1.shape.circle.radius);
+                            collisionHappened = circle.Intersects(shape2.shape.rect);
                         }
                    } else if (shape1.t == ShapeType::kLine) {
                         if (shape2.t == ShapeType::kCircle) {
@@ -134,8 +139,19 @@ void GameEngine::HandleCollisions(DrawContext &drawContext) {
                             collisionHappened = shape1.shape.line.Crosses(shape2.shape.line, hitInWorld);
                             hitLine[0] = true;
                             hitLine[1] = true;
+                        } else if (shape2.t == ShapeType::kRect) {
+                            drawContext.SetContextOffset(objs[1]->GetLocation());
+                            drawContext.SetContextRotation(objs[1]->GetRotation());
+                            Line line(drawContext.ReverseTransform(shape1.shape.line.p1), drawContext.ReverseTransform(shape1.shape.line.p2));
+                            collisionHappened = shape2.shape.rect.Intersects(line, hitInWorld);
+                            if (collisionHappened) {
+                                hitInWorld = drawContext.Transform(hitInWorld);
+                                hitLine[0] = true;
+                            }
                         }
                     }
+                    
+
 
                     if (collisionHappened) {
                         if (hitLine[0]) {
