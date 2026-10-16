@@ -118,42 +118,60 @@ void GameEngine::HandleCollisions(DrawContext &drawContext) {
                     Shape &shape1 = wordlShapes[0][x];
                     Shape &shape2 = wordlShapes[1][y];
                     Point2D hitInWorld;
+                    bool perLoopCollided = false;
 
                    if (shape1.t == ShapeType::kCircle) {
                         if (shape2.t == ShapeType::kCircle) {
-                            collisionHappened = shape1.shape.circle.Intersects(shape2.shape.circle);
+                            perLoopCollided = shape1.shape.circle.Intersects(shape2.shape.circle);
                         } else if (shape2.t == ShapeType::kLine) {
-                            collisionHappened = shape1.shape.circle.Intersects(shape2.shape.line, hitInWorld);
+                            perLoopCollided = shape1.shape.circle.Intersects(shape2.shape.line, hitInWorld);
                             hitLine[1] = true;
                         } else if (shape2.t == ShapeType::kRect) {
                             drawContext.SetContextOffset(objs[1]->GetLocation());
                             drawContext.SetContextRotation(objs[1]->GetRotation());
                             Circle circle(drawContext.ReverseTransform(shape1.shape.circle.center), shape1.shape.circle.radius);
-                            collisionHappened = circle.Intersects(shape2.shape.rect);
+                            perLoopCollided = circle.Intersects(shape2.shape.rect);
                         }
                    } else if (shape1.t == ShapeType::kLine) {
                         if (shape2.t == ShapeType::kCircle) {
-                            collisionHappened = shape2.shape.circle.Intersects(shape1.shape.line, hitInWorld);
+                            perLoopCollided = shape2.shape.circle.Intersects(shape1.shape.line, hitInWorld);
                             hitLine[0] = true;
                         } else if (shape2.t == ShapeType::kLine) {
-                            collisionHappened = shape1.shape.line.Crosses(shape2.shape.line, hitInWorld);
+                            perLoopCollided = shape1.shape.line.Crosses(shape2.shape.line, hitInWorld);
                             hitLine[0] = true;
                             hitLine[1] = true;
                         } else if (shape2.t == ShapeType::kRect) {
                             drawContext.SetContextOffset(objs[1]->GetLocation());
                             drawContext.SetContextRotation(objs[1]->GetRotation());
                             Line line(drawContext.ReverseTransform(shape1.shape.line.p1), drawContext.ReverseTransform(shape1.shape.line.p2));
-                            collisionHappened = shape2.shape.rect.Intersects(line, hitInWorld);
-                            if (collisionHappened) {
+                            perLoopCollided = shape2.shape.rect.Intersects(line, hitInWorld);
+                            if (perLoopCollided) {
                                 hitInWorld = drawContext.Transform(hitInWorld);
                                 hitLine[0] = true;
+                            }
+                        }
+                    } else if (shape1.t == ShapeType::kRect) {
+                        if (shape2.t == ShapeType::kCircle) {
+                            drawContext.SetContextOffset(objs[0]->GetLocation());
+                            drawContext.SetContextRotation(objs[0]->GetRotation());
+                            Circle circle(drawContext.ReverseTransform(shape2.shape.circle.center), shape2.shape.circle.radius);
+                            perLoopCollided = circle.Intersects(shape1.shape.rect);
+                        } else if (shape2.t == ShapeType::kLine) {
+                            drawContext.SetContextOffset(objs[0]->GetLocation());
+                            drawContext.SetContextRotation(objs[0]->GetRotation());
+                            Line line(drawContext.ReverseTransform(shape2.shape.line.p1), drawContext.ReverseTransform(shape2.shape.line.p2));
+                            perLoopCollided = shape1.shape.rect.Intersects(line, hitInWorld);
+                            if (perLoopCollided) {
+                                hitInWorld = drawContext.Transform(hitInWorld);
+                                hitLine[1] = true;
                             }
                         }
                     }
                     
 
 
-                    if (collisionHappened) {
+                    if (perLoopCollided) {
+                        collisionHappened = true;
                         if (hitLine[0]) {
                             drawContext.SetContextOffset(objs[0]->GetLocation());
                             drawContext.SetContextRotation(objs[0]->GetRotation());
