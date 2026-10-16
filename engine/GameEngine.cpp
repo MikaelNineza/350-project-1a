@@ -357,7 +357,7 @@ void GameEngine::Run() {
             obj->RenderUI(&context);
         }
 
-        const bool drawBB = true;
+        const bool drawBB = false;
         if (drawBB) {
             for (auto& obj : mGameObjects) {
                 if (auto graphic = std::dynamic_pointer_cast<CollisionObject>(obj)) {
