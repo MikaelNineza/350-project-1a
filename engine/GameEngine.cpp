@@ -90,8 +90,26 @@ void GameEngine::HandleCollisions(DrawContext &drawContext) {
             }
             
             std::shared_ptr<CollisionObject> objs[2] = {colObjects[i], colObjects[j]};
-            
-            
+            std::vector<Shape> wordlShapes[2];
+
+            for (int k = 0; k < 2; ++k) {
+                drawContext.SetContextOffset(objs[k]->GetLocation());
+                drawContext.SetContextRotation(objs[k]->GetRotation());
+
+                for (const Shape &s : objs[k]->GetShapes()) {
+                    if (s.t == ShapeType::kCircle) {
+                        Circle circle(drawContext.Transform(s.shape.circle.center), s.shape.circle.radius);
+                        wordlShapes[k].push_back(Shape(circle));
+                    } else if (s.t == ShapeType::kLine) {
+                        Line line(drawContext.Transform(s.shape.line.p1), drawContext.Transform(s.shape.line.p2));
+                        wordlShapes[k].push_back(Shape(line));
+                    } else {
+                        // Rec isn't transformed so that if it's rotated, it doesn't turn into its bounding box
+                        wordlShapes[k].push_back(s);
+                    }
+                }
+            }
+
 
         }
     }
