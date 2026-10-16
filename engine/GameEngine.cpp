@@ -79,10 +79,13 @@ void GameEngine::HandleCollisions(DrawContext &drawContext) {
     for (int i = 0; i < objCount; ++i) {
         for (int j = i + 1; j < objCount; ++j) {
             
-            Rect overlap = worldBounds[i];
-            overlap &= worldBounds[j];
+            Rect bb1 = worldBounds[i];
+            Rect bb2 = worldBounds[j];
             
-            if (overlap.width <= 0 || overlap.height <= 0) {
+            if (bb1.topLeft.x > bb2.topLeft.x + bb2.width ||
+                bb2.topLeft.x > bb1.topLeft.x + bb1.width ||
+                bb1.topLeft.y > bb2.topLeft.y + bb2.height ||
+                bb2.topLeft.y > bb1.topLeft.y + bb1.height) {
                 continue;
             }
             
@@ -136,9 +139,11 @@ void GameEngine::HandleCollisions(DrawContext &drawContext) {
             bool collisionHappened = false;
             if (!(hitLine[0] || hitLine[1])) {
                 for (int x = 0; x < worldShapes[0].size(); ++x) {
+                    if (collisionHappened) break;
                     for (int y = 0; y < worldShapes[1].size(); ++y) {
                         if (CollisionMade(worldShapes[0][x], worldShapes[1][y])) {
                             collisionHappened = true;
+                            break;
                         }
                     }
                 }
@@ -250,6 +255,18 @@ void GameEngine::Run() {
         for(auto& obj : mGameObjects) {
             context.CurrObject = obj;
             obj->RenderUI(&context);
+        }
+
+        const bool drawBB = true;
+        if (drawBB) {
+            for (auto& obj : mGameObjects) {
+                if (auto graphic = std::dynamic_pointer_cast<CollisionObject>(obj)) {
+                    drawContext.SetContextOffset(graphic->GetLocation());
+                    drawContext.SetContextRotation(graphic->GetRotation());
+                    Rect box = drawContext.Transform(graphic->GetBounds());
+                    guiContext.FrameRect(box, 1.0f, Colors::yellow);
+                }
+            }
         }
 
         // Actually render to window
