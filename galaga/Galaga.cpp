@@ -255,7 +255,7 @@ void Galaga::RenderUI(CMPUT350::GameContext *context) {
         else if (state == State::GameOver) {
             context->GUIContext->DrawCenteredText("GAME OVER", 32, CMPUT350::Point2D(width / 2.f, height / 3.f), RED);
             context->GUIContext->DrawCenteredText(std::format("LEVEL REACHED: {}", level), 16, CMPUT350::Point2D(width / 2.f, height / 2.f), WHITE);
-            context->GUIContext->DrawCneteredText(std::format("FINAL SCORE: {}", points), 16, CMPUT350::Point2D(width / 2.f,  height * 0.6f), WHITE);
+            context->GUIContext->DrawCenteredText(std::format("FINAL SCORE: {}", points), 16, CMPUT350::Point2D(width / 2.f,  height * 0.6f), WHITE);
             return;
         }
         context->GUIContext->DrawText(std::format("SCORE: {}", points), 16, CMPUT350::Point2D(0.f, 4.f), WHITE);
