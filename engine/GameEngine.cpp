@@ -90,79 +90,8 @@ void GameEngine::HandleCollisions(DrawContext &drawContext) {
             }
             
             std::shared_ptr<CollisionObject> objs[2] = {colObjects[i], colObjects[j]};
-            std::vector<Shape> worldShapes[2];
-
-            for (int k = 0; k < 2; ++k) {
-                drawContext.SetContextOffset(objs[k]->GetLocation());
-                drawContext.SetContextRotation(objs[k]->GetRotation());
-
-                for (const Shape &s : objs[k]->GetShapes()) {
-                    if (s.t == ShapeType::kRect) {
-                        worldShapes[k].push_back(drawContext.Transform(s.shape.rect));
-                    }
-                    else if (s.t == ShapeType::kCircle) {
-                        Shape circle = Shape(Circle(drawContext.Transform(s.shape.circle.center), s.shape.circle.radius));
-                        worldShapes[k].push_back(circle);
-                    }
-                    else {
-                        Shape line = Shape(Line(drawContext.Transform(s.shape.line.p1), drawContext.Transform(s.shape.line.p2)));
-                        worldShapes[k].push_back(line);
-                    }
-                }
-            }
-
-
-            // Handles line collisions with lines and other shapes.
-            bool hitLine[2] = {false, false};
-            Point2D collisionPoint[2];
-            for (int k = 0; k < 2; ++k) {
-                for (const Shape &s : worldShapes[k]) {
-                    if (s.t != ShapeType::kLine) {
-                        continue;
-                    }
-
-                    int otherIdx = k ? 0 : 1;
-                    for (const Shape &other : worldShapes[otherIdx]) {
-                        if (LineCollision(s.shape.line, other, collisionPoint[k])) {
-                            hitLine[k] = true;
-                            break;
-                        }
-                    }
-
-                    if (hitLine[k]) {
-                        break;
-                    }
-                }
-
-            }
-
-            bool collisionHappened = false;
-            if (!(hitLine[0] || hitLine[1])) {
-                for (int x = 0; x < worldShapes[0].size(); ++x) {
-                    if (collisionHappened) break;
-                    for (int y = 0; y < worldShapes[1].size(); ++y) {
-                        if (CollisionMade(worldShapes[0][x], worldShapes[1][y])) {
-                            collisionHappened = true;
-                            break;
-                        }
-                    }
-                }
-            } else {
-                collisionHappened = true;
-            }
-
-            if (collisionHappened) {
-                for (int k = 0; k < 2; ++k) {
-                    int otherIdx = k ? 0 : 1;
-                    if (hitLine[k]) {
-                        drawContext.SetContextOffset(objs[k]->GetLocation());
-                        drawContext.SetContextRotation(objs[k]->GetRotation());
-                        objs[k]->CollisionEnter(objs[otherIdx], drawContext.ReverseTransform(collisionPoint[k]));
-                    } else {
-                        objs[k]->CollisionEnter(objs[otherIdx]);
-                    }
-                }
-            }
+            
+            
 
         }
     }
