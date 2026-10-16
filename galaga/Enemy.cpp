@@ -5,17 +5,35 @@
 Enemy::Enemy(CMPUT350::Point2D formationLoc, const std::vector<CMPUT350::Point2D> &path) : formationLoc(formationLoc), path(path), t(0.f), isAlive(true), curve(path), onPath(true), attacking(false), died(false), killedPlayer(false)
 {
     loc = path[0];
-    CMPUT350::Rect local(CMPUT350::Point2D(-ENEMY_WIDTH / 2.f, -ENEMY_HEIGHT / 2.f), ENEMY_WIDTH, ENEMY_HEIGHT);
-    shapes.emplace_back(local);
+    shapes.clear();
+
+    // --- fuselage (center column) ---
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-2.f, -20.f), 4.f, 6.f));    // 0  nose tip
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-4.f, -14.f), 8.f, 8.f));    // 1  upper fuselage
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-6.f, -6.f), 12.f, 14.f));   // 2  main body
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-4.f, 8.f), 8.f, 6.f));      // 3  tail
+
+    // --- inner wings ---
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-14.f, -2.f), 8.f, 12.f));   // 4  left inner wing
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(6.f, -2.f), 8.f, 12.f));     // 5  right inner wing
+
+    // --- outer wing pods ---
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-20.f, -6.f), 6.f, 18.f));   // 6  left pod
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(14.f, -6.f), 6.f, 18.f));    // 7  right pod
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-20.f, -10.f), 6.f, 4.f));   // 8  left pod tip
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(14.f, -10.f), 6.f, 4.f));    // 9  right pod tip
+
+    // --- rear thrusters ---
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-8.f, 10.f), 4.f, 8.f));     // 10 left thruster
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(4.f, 10.f), 4.f, 8.f));      // 11 right thruster
+
+    // --- cockpit detail ---
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-2.f, -10.f), 4.f, 8.f));    // 12 cockpit (draw on top of the fuselage)
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-1.f, -4.f), 2.f, 4.f));     // 13 cockpit highlight
 }
 
 void Enemy::Initialize(CMPUT350::GameContext* context)
 {
-    for (const auto obj : *context->mEngineView) {
-        if (auto player = std::dynamic_pointer_cast<Player>(obj)) {
-            playerLoc = player->GetLocation();
-        }
-    }
 }
 
 bool Enemy::BeginAttack(const std::vector<CMPUT350::Point2D>& attackPath) {
@@ -32,47 +50,7 @@ bool Enemy::BeginAttack(const std::vector<CMPUT350::Point2D>& attackPath) {
 
 void Enemy::Update(CMPUT350::GameContext* context)
 {
-    if (died) {
-        isAlive = false;
-        if (killedPlayer) {
-            return;
-        }
-        if (onPath) {
-            context->mNotificationManager->Notify("EnemyDiedWhileMoving");
-        }
-        else {
-            context->mNotificationManager->Notify("EnemyDied");
-        }
-        return;
-    }
-    // enemy is swaying while in formation
-    if (!onPath) {
-        loc = CMPUT350::Point2D(formationLoc.x + SWAY_DIST * std::sin(context->currentFrame * SWAY_SPEED), formationLoc.y);
-        return;
-    }
-
-    auto s = curve.GetSlope(t);
-    t += PIXELS_PER_FRAME / s.Distance(CMPUT350::Point2D(0.f, 0.f)); // increment t
-
-    // moving along a path (either going into formation or attacking)
-    if (t < (path.size() - 1) / 3.f) {
-        loc = curve.GetPoint(t);
-        if (attacking && context->currentFrame % FIRE_NTH_FRAME == 0) {
-            std::shared_ptr<Bullet> bullet = std::make_shared<Bullet>(loc, CMPUT350::Point2D(0.f, 1.f), false, context->CurrObject);
-            context->mEngineView->AddGameObject(bullet);
-        }
-    }
-    // done attacking, so move back to formation
-    else if (attacking) {
-        path = BuildSideReturnPath(loc, formationLoc, playerLoc.y);
-        curve = CMPUT350::Bezier(path);
-        t = 0.f;
-        attacking = false;
-    }
-    else {
-        onPath = false;
-        loc = formationLoc;
-    }
+    return;
 }
 
 void Enemy::LateUpdate(CMPUT350::GameContext* context)
@@ -87,7 +65,7 @@ void Enemy::RenderBackground(CMPUT350::GameContext* context)
 
 void Enemy::RenderForeground(CMPUT350::GameContext* context)
 {
-    context->ScreenContext->DrawRect(shapes[0].shape.rect, CMPUT350::Colors::red);
+    return;
 }
 
 void Enemy::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)
@@ -96,10 +74,10 @@ void Enemy::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj
     std::shared_ptr<Player> player = std::dynamic_pointer_cast<Player>(obj);
 
     if (bullet != nullptr) {
-        if (!bullet->IsPlayerBullet() || !bullet->IsAlive()) {
+        if (!bullet->IsPlayerBullet()) {
             return;
         }
-        if (--health == 0) {
+        if (--health <= 0) {
             Kill();
         }
     }
@@ -155,11 +133,17 @@ int Enemy::GetHealth() const {
     return health;
 }
 
-// this was ai generated
+/*
+ * This helper method was AI generated using Gemini.
+ * Prompt: The screen is 768x1024, the current return path is done poorly. Make a curve that a galaga enemy would travel along after completing an attack and going back to formation.
+ * Make it so the curve just travels along the edge of the screen, either left or right, and then moderately go back to formation.
+ * The end of the attack is at "loc" and the formation location is "formationLoc", assume that these are given.
+ *
+ * A sample path that didn't work as well was previously provided with the prompt as a reference. Gemini gave a helper instead of a fixed set of points.
+ */
 std::vector<CMPUT350::Point2D> Enemy::BuildSideReturnPath(
     const CMPUT350::Point2D& loc,
-    const CMPUT350::Point2D& formationLoc,
-    float playerY)
+    const CMPUT350::Point2D& formationLoc)
 {
     using CMPUT350::Point2D;
 

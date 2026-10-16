@@ -4,7 +4,7 @@
 #include "CollisionObject.h"
 #include "GameContext.h"
 
-constexpr float BULLET_SPEED = 20.f;
+constexpr float BULLET_SPEED = 15.f;
 constexpr float BULLET_SIZE = 5.f;
 class Bullet : public CMPUT350::CollisionObject
 {

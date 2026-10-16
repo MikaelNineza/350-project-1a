@@ -8,29 +8,53 @@
 
 Player::Player(CMPUT350::Point2D loc) : loc(loc), isAlive(true), requestFire(false), requestLeft(false), requestRight(false), lives(2), died(false)
 {
-    CMPUT350::Rect local(CMPUT350::Point2D(-PLAYER_WIDTH / 2.f, -PLAYER_HEIGHT / 2.f), PLAYER_WIDTH, PLAYER_HEIGHT);
-    auto left_wing = local;
-    left_wing.topLeft.y += left_wing.height / 2.f;
-    left_wing.width /= 4.f;
-    left_wing.height /= 2.f;
-
-    auto main_body = local;
-    main_body.Inset(main_body.width / 4.f);
-
-    auto right_wing = local;
-    right_wing.topLeft.y += right_wing.height / 2.f;
-    right_wing.topLeft.x += right_wing.width * 0.75f;
-    right_wing.width /= 4.f;
-    right_wing.height /= 2.f;
-
-    auto tip = local;
-    tip.topLeft.y -= tip.height * 0.375f;
-    tip.Inset(tip.height * 0.375f);
+    /*
+     * The design for the ship was AI generated using Claude.
+     * Prompt: These are the current shapes I have for my galaga ship. Make a comprehensive list of rectangles
+     * based on a good looking galaga ship. Rectangles can be drawn directly; the bounds for the player is 40x40.
+     *
+     * Followed by another prompt to colour each rectangle. This was also done for the enemy classes
+     */
     shapes.clear();
-    shapes.emplace_back(left_wing);
-    shapes.emplace_back(main_body);
-    shapes.emplace_back(right_wing);
-    shapes.emplace_back(tip);
+    colors.clear();
+
+    // --- fuselage (center column) ---
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-2.f, -20.f), 4.f, 6.f));    // 0  nose tip
+    colors.push_back(CMPUT350::Colors::white);
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-4.f, -14.f), 8.f, 8.f));    // 1  upper fuselage
+    colors.push_back(CMPUT350::Colors::white);
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-6.f, -6.f), 12.f, 14.f));   // 2  main body
+    colors.push_back(CMPUT350::Colors::white);
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-4.f, 8.f), 8.f, 6.f));      // 3  tail
+    colors.push_back(CMPUT350::Colors::red);
+
+    // --- inner wings ---
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-14.f, -2.f), 8.f, 12.f));   // 4  left inner wing
+    colors.push_back(CMPUT350::Colors::gray);
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(6.f, -2.f), 8.f, 12.f));     // 5  right inner wing
+    colors.push_back(CMPUT350::Colors::gray);
+
+    // --- outer wing pods ---
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-20.f, -6.f), 6.f, 18.f));   // 6  left pod
+    colors.push_back(CMPUT350::Colors::red);
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(14.f, -6.f), 6.f, 18.f));    // 7  right pod
+    colors.push_back(CMPUT350::Colors::red);
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-20.f, -10.f), 6.f, 4.f));   // 8  left pod tip
+    colors.push_back(CMPUT350::Colors::blue);
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(14.f, -10.f), 6.f, 4.f));    // 9  right pod tip
+    colors.push_back(CMPUT350::Colors::blue);
+
+    // --- rear thrusters ---
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-8.f, 10.f), 4.f, 8.f));     // 10 left thruster
+    colors.push_back(CMPUT350::Colors::gray);
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(4.f, 10.f), 4.f, 8.f));      // 11 right thruster
+    colors.push_back(CMPUT350::Colors::gray);
+
+    // --- cockpit detail ---
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-2.f, -10.f), 4.f, 8.f));    // 12 cockpit
+    colors.push_back(CMPUT350::Colors::blue);
+    shapes.emplace_back(CMPUT350::Rect(CMPUT350::Point2D(-1.f, -4.f), 2.f, 4.f));     // 13 cockpit highlight
+    colors.push_back(CMPUT350::Colors::white);
 }
 
 void Player::Initialize(CMPUT350::GameContext* context)
@@ -63,7 +87,7 @@ void Player::Update(CMPUT350::GameContext* context)
 
     if (requestFire) {
         requestFire = false;
-        if (bullets.size() <= 2) {
+        if (bullets.size() < 2) {
             auto dir = CMPUT350::Point2D(0.0f, -1.0f); // bullet shoots straight up
             auto start_pos = loc;
             start_pos.y -= PLAYER_HEIGHT / 2.f; // bullets spawn at the top of the player
@@ -115,8 +139,8 @@ void Player::RenderBackground(CMPUT350::GameContext* context)
 
 void Player::RenderForeground(CMPUT350::GameContext* context)
 {
-    for (const auto& s : shapes) {
-        context->ScreenContext->DrawRect(s.shape.rect, CMPUT350::Colors::gray);
+    for (int i = 0; i < shapes.size(); i++) {
+        context->ScreenContext->DrawRect(shapes[i].shape.rect, colors[i]);
     }
 }
 
@@ -126,7 +150,7 @@ void Player::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& ob
     std::shared_ptr<Enemy> enemy = std::dynamic_pointer_cast<Enemy>(obj);
 
     if (bullet != nullptr) {
-        if (bullet->IsPlayerBullet() || !bullet->IsAlive()) {
+        if (bullet->IsPlayerBullet()) {
             return;
         }
         TakeDamage();

@@ -2,6 +2,7 @@
 #define PLAYER_H
 
 #include "CollisionObject.h"
+#include "DrawContext.h"
 #include <vector>
 #include <memory>
 #include <string>
@@ -44,6 +45,7 @@ private:
     bool requestRight;
     int lives;
     bool died;
+    std::vector<CMPUT350::RGBColor> colors;
 };
 
 #endif

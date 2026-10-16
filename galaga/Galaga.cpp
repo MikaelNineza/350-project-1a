@@ -36,36 +36,39 @@ void Galaga::Initialize(CMPUT350::GameContext *context) {
     context->mNotificationManager->Register(context->CurrObject, "PlayerDied");
     context->mEngineView->AddGameObject(std::make_shared<Stars>(250, CMPUT350::Rect(0, 0, context->ScreenContext->GetWindowWidth(), context->ScreenContext->GetWindowHeight())));
 
-    // all of these were ai generated curves
-    // 8. S-curve from top-left (3 segments)
+    /*
+     * All of these paths were AI generated using Claude.
+     * Prompt: Given this class that supports cubic bezier curves from a set of points (the finished Bezier class was pasted for the prompt),
+     * and a world size of 768x1024, give many samples of a bezier curve that an incoming Galaga enemy might follow, e.g. starting off
+     * screen and the last point being "formation". Assume that "formation" is already provided in code.
+     *
+     * Many paths were provided, these are the ones that were picked for usage.
+     */
+
     std::vector<CMPUT350::Point2D> topSCurveLeft = {
         {200, -60}, {200, 200}, {600, 200}, {600, 400},
         {600, 600}, {150, 600}, {150, 450},
         {150, 300}, {500, 250}
     };
 
-    // 9. S-curve from top-right (3 segments, mirror of 8)
     std::vector<CMPUT350::Point2D> topSCurveRight = {
         {568, -60}, {568, 200}, {168, 200}, {168, 400},
         {168, 600}, {618, 600}, {618, 450},
         {618, 300}, {268, 250}
     };
 
-    // 10. Wide double loop from the right edge (3 segments)
     std::vector<CMPUT350::Point2D> rightDoubleLoop = {
         {828, 200}, {400, 100}, {100, 300}, {300, 450},
         {500, 600}, {650, 350}, {450, 250},
         {250, 200}, {300, 500}
     };
 
-    // 11. Wide double loop from the left edge (3 segments, mirror of 10)
     std::vector<CMPUT350::Point2D> leftDoubleLoop = {
         {-60, 200}, {368, 100}, {668, 300}, {468, 450},
         {268, 600}, {118, 350}, {318, 250},
         {518, 200}, {468, 500}
     };
 
-    // 12. Zig-zag dive from top center (3 segments)
     std::vector<CMPUT350::Point2D> zigZagDive = {
         {384, -60}, {100, 100}, {100, 300}, {384, 350},
         {668, 400}, {668, 600}, {450, 650},
@@ -77,10 +80,6 @@ void Galaga::Initialize(CMPUT350::GameContext *context) {
     entrances.push_back(leftDoubleLoop);
     entrances.push_back(zigZagDive);
     entrances.push_back(rightDoubleLoop);
-
-    /*entrances.push_back(rightDoubleLoop);
-    entrances.push_back(leftDoubleLoop);
-    entrances.push_back(zigZagDive);*/
 }
 
 void Galaga::Update(CMPUT350::GameContext* context) {
@@ -283,7 +282,7 @@ void Galaga::SpawnEnemy(CMPUT350::GameContext* context) {
     std::vector<CMPUT350::Point2D> entrance;
     std::shared_ptr<Enemy> enemy;
 
-    // first and last waves have a specific opening
+    // first and last waves have a symmetric opening
     if (spawnWaves == 0 || spawnWaves == 4) {
         int i = spawnEnemy - 1;
         int col = (i % 2 == 0) ? i / 2 : (NUM_ENEMIES - 1) - i / 2;
@@ -293,6 +292,7 @@ void Galaga::SpawnEnemy(CMPUT350::GameContext* context) {
         entrance.push_back(formation);
         enemy = std::make_shared<Enemy2>(formation, entrance);
     }
+    // follows a left opening, a zig zag opening, and a right opening for the middle waves
     else {
         x = margin + (spawnEnemy - 1) * spacing;
         entrance = entrances[spawnWaves + 1];

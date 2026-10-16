@@ -4,31 +4,27 @@
 #include <vector>
 #include <cmath>
 
-Bullet::Bullet(CMPUT350::Point2D location, CMPUT350::Point2D heading, bool player, std::weak_ptr<CMPUT350::GameObject> parent)
-                : location(location), prev_location(location), heading(heading), player(player), isAlive(true), parent(parent)
-{
-    shapes.emplace_back(CMPUT350::Line(0.f, 0.f, -BULLET_SPEED, 0.f));
+Bullet::Bullet(CMPUT350::Point2D location, CMPUT350::Point2D heading, bool player,
+               std::weak_ptr<CMPUT350::GameObject> parent)
+    : location(location), prev_location(location), heading(heading), player(player), isAlive(true), parent(parent) {
+    CMPUT350::Point2D d = heading * BULLET_SPEED;
+    shapes.emplace_back(CMPUT350::Line(d.x, d.y, 0.f, 0.f));
 }
 
-bool Bullet::IsPlayerBullet()
-{
+bool Bullet::IsPlayerBullet() {
     return player;
 }
 
-void Bullet::Initialize(CMPUT350::GameContext* context)
-{
-
+void Bullet::Initialize(CMPUT350::GameContext *context) {
 }
 
-void Bullet::Update(CMPUT350::GameContext* context)
-{
+void Bullet::Update(CMPUT350::GameContext *context) {
     // track prev location for bullet bound calc
     prev_location = location;
     location += heading * BULLET_SPEED;
 }
 
-void Bullet::LateUpdate(CMPUT350::GameContext* context)
-{
+void Bullet::LateUpdate(CMPUT350::GameContext *context) {
     // kill bullet if it's out of bounds
     int screen_width = context->ScreenContext->GetWindowWidth();
     int screen_height = context->ScreenContext->GetWindowHeight();
@@ -42,19 +38,17 @@ void Bullet::LateUpdate(CMPUT350::GameContext* context)
     }
 }
 
-void Bullet::RenderBackground(CMPUT350::GameContext* context)
-{
+void Bullet::RenderBackground(CMPUT350::GameContext *context) {
     return;
 }
 
 void Bullet::RenderForeground(CMPUT350::GameContext* context)
 {
-    // bullet rendered as a line
-    context->ScreenContext->DrawLine(CMPUT350::Point2D(0.f, 0.f), CMPUT350::Point2D(0.f, BULLET_SPEED), BULLET_SIZE, CMPUT350::Colors::white);
+    CMPUT350::Point2D d = heading * BULLET_SPEED;
+    context->ScreenContext->DrawLine(CMPUT350::Point2D(0.f, 0.f), d, BULLET_SIZE, CMPUT350::Colors::white);
 }
 
-void Bullet::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& obj)
-{
+void Bullet::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject> &obj) {
     // if target is hit, kill the bullet
     if (player) {
         std::shared_ptr<Enemy> enemy = std::dynamic_pointer_cast<Enemy>(obj);
@@ -62,8 +56,7 @@ void Bullet::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& ob
             return;
         }
         Kill();
-    }
-    else {
+    } else {
         std::shared_ptr<Player> player = std::dynamic_pointer_cast<Player>(obj);
         if (player == nullptr) {
             return;
@@ -72,29 +65,26 @@ void Bullet::CollisionEnter(const std::shared_ptr<CMPUT350::CollisionObject>& ob
     }
 }
 
-void Bullet::Kill()
-{
+void Bullet::Kill() {
     isAlive = false;
 }
 
-bool Bullet::IsAlive() const
-{
+bool Bullet::IsAlive() const {
     return isAlive;
 }
 
-const CMPUT350::Rect& Bullet::GetBounds()
-{
+const CMPUT350::Rect &Bullet::GetBounds() {
     static CMPUT350::Rect sBounds(0, 0, 0, 0);
 
     auto topLeft = CMPUT350::Point2D(0.f, 0.f) - BULLET_SIZE / 2.f;
-    auto topLeftPrev = (location - prev_location) - BULLET_SIZE / 2.f;
+    auto topLeftPrev = heading * BULLET_SPEED - BULLET_SIZE / 2.f;
     sBounds = CMPUT350::Rect(topLeft, BULLET_SIZE, BULLET_SIZE);
     sBounds |= CMPUT350::Rect(topLeftPrev, BULLET_SIZE, BULLET_SIZE);
-    
+
     return sBounds;
 }
 
-const std::vector<CMPUT350::Shape>& Bullet::GetShapes() {
+const std::vector<CMPUT350::Shape> &Bullet::GetShapes() {
     return shapes;
 }
 
@@ -105,9 +95,7 @@ CMPUT350::Point2D Bullet::GetLocation() const {
 float Bullet::GetRotation() const {
     //return std::atan2(heading.y, heading.x) + PI / 2.f;
     return 0.f;
-
 }
 
-void Bullet::ReceiveNotification(const std::string& key) {
-
+void Bullet::ReceiveNotification(const std::string &key) {
 }

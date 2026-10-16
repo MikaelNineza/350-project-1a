@@ -12,7 +12,6 @@ constexpr float ENEMY_HEIGHT = 40.f;
 constexpr float PIXELS_PER_FRAME = 15.f;
 constexpr float SWAY_DIST = 10.f;
 constexpr float SWAY_SPEED = 0.15f;
-constexpr int FIRE_NTH_FRAME = 60;
 constexpr float PI = 3.141592f;
 
 class Enemy : public CMPUT350::CollisionObject
@@ -44,9 +43,9 @@ public:
     bool InFormation() const;
     void SetHealth(int newHealth);
     int GetHealth() const;
-    std::vector<CMPUT350::Point2D> BuildSideReturnPath(const CMPUT350::Point2D &loc, const CMPUT350::Point2D& formationLoc, float playerY);
+    std::vector<CMPUT350::Point2D> BuildSideReturnPath(const CMPUT350::Point2D &loc, const CMPUT350::Point2D& formationLoc);
 
-private:
+protected:
     CMPUT350::Point2D loc;
     CMPUT350::Point2D formationLoc;
     bool isAlive;
@@ -59,7 +58,6 @@ private:
     std::vector<CMPUT350::Shape> shapes;
     bool died;
     bool killedPlayer;
-    CMPUT350::Point2D playerLoc;
 };
 
 
