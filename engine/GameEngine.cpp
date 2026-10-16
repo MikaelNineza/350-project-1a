@@ -165,6 +165,46 @@ void GameEngine::HandleCollisions(DrawContext &drawContext) {
                                 hitInWorld = drawContext.Transform(hitInWorld);
                                 hitLine[1] = true;
                             }
+                        } else if (shape2.t == ShapeType::kRect) {
+                            /*
+                                THIS IS AI GENERATED CODE.
+                                Prompt: How do I complete the else if (shape2.t == ShapeType::kRect) where
+                                I compare to see if two rectangle collide the same I have done when a rectangle
+                                collides with another shape type.
+                                Reflection: The code succesfully impleted the Rect vs Rect collisions.
+                            */
+                            
+
+                            // Rect vs rect. Work in object 1's local space, where its rect isn't rotated.
+                            Rect rect1 = shape1.shape.rect;
+                            Rect rect2 = shape2.shape.rect;
+
+                            Point2D corners2[4] = {
+                                rect2.topLeft,
+                                Point2D(rect2.topLeft.x + rect2.width, rect2.topLeft.y),
+                                Point2D(rect2.topLeft.x + rect2.width, rect2.topLeft.y + rect2.height),
+                                Point2D(rect2.topLeft.x, rect2.topLeft.y + rect2.height)
+                            };
+
+                            // Object 2's corners: its local space -> world -> object 1's local space
+                            drawContext.SetContextOffset(objs[1]->GetLocation());
+                            drawContext.SetContextRotation(objs[1]->GetRotation());
+                            for (int m = 0; m < 4; ++m) {
+                                corners2[m] = drawContext.Transform(corners2[m]);
+                            }
+                            drawContext.SetContextOffset(objs[0]->GetLocation());
+                            drawContext.SetContextRotation(objs[0]->GetRotation());
+                            for (int m = 0; m < 4; ++m) {
+                                corners2[m] = drawContext.ReverseTransform(corners2[m]);
+                            }
+
+                            // Does any edge of object 2's rect touch object 1's rect?
+                            for (int m = 0; m < 4 && !perLoopCollided; ++m) {
+                                Point2D unused;
+                                perLoopCollided = rect1.Intersects(Line(corners2[m], corners2[(m + 1) % 4]), unused);
+                            }
+
+                            /*END OF AI GENERATED CODE*/
                         }
                     }
                     
